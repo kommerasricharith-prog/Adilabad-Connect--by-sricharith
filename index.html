@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="google-site-verification" content="wFgKRONXx7eKkWb_KMQFTRj8IwJDKUkDOucBgv-vjWs" />
+<meta name="google-site-verification" content="wFgKRONXx7eKkWb_KMQFTRj8IwJDKUkDOucBgv-vjWs" />
 <title>Adilabad Public Complaint Portal – 504001</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -1013,11 +1013,10 @@ footer{
       <div class="footer-col">
         <h4 id="contact-head">Contact</h4>
         <ul>
-         <p>work in progress</p>
+          <li>📧 <a href="mailto:mcaadilabad5885@gmail.com">mcaadilabad5885@gmail.com</a></li>
           <li>📍 Adilabad, Telangana – 504001</li>
           <li style="margin-top:10px;font-size:.78rem;color:rgba(255,255,255,.5)" id="dev-note">Website Developed by: <strong style="color:var(--orange-light)">Sricharith</strong></li>
-          <li>📧 <a href="mailto:kommerasripad@gmail.com" style="color:var(--orange-light)">kommerasripad@gmail.com
-          sricharith</a></li>
+          <li>📧 <a href="mailto:kommerasripad@gmail.com" style="color:var(--orange-light)">kommerasripad@gmail.com</a></li>
         </ul>
       </div>
     </div>
@@ -1610,43 +1609,48 @@ function buildReview(){
 }
 function esc(s){return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-function submitComplaint(){
-    if(!generatedLetter){
-        showToast('⚠️ Please generate the complaint letter first.');
-        return;
-    }
-
-    // 1. Gather the complaint data from your inputs
-    const complaintData = {
-        id: document.getElementById('complaint-id-display').textContent,
-        name: document.getElementById('f-name').value,
-        mobile: document.getElementById('f-mobile').value,
-        email: document.getElementById('f-email').value,
-        ward: document.getElementById('f-ward').value,
-        category: document.getElementById('f-category').value,
-        since: document.getElementById('f-since').value,
-        house: document.getElementById('f-house').value,
-        street: document.getElementById('f-street').value,
-        landmark: document.getElementById('f-landmark').value,
-        area: document.getElementById('f-area').value,
-        letter: generatedLetter || 'Not generated',
-        date: new Date().toLocaleDateString()
-    };
-
-    // 2. Fetch existing complaints from localStorage, add the new one, and save back
-    let complaintsList = JSON.parse(localStorage.getItem('savedComplaints')) || [];
-    complaintsList.push(complaintData);
-    localStorage.setItem('savedComplaints', JSON.stringify(complaintsList));
-
-    // 3. Refresh the dashboard list immediately
-    displayComplaintsInDashboard();
-
-    // 4. Show success screen
-    document.getElementById('form-screen').classList.add('hidden');
-    document.getElementById('success-screen').classList.remove('hidden');
-
-    // 5. Work in progress notification
-    showToast('⚠️ This feature is a work in progress!');
+/* ===== SUBMIT ===== */
+async function submitComplaint(){
+  if(!validatePanel(3)) { showPanel(3); return; }
+  const complaintId=generateComplaintId();
+  const addr=document.getElementById('auto-address').value||
+    [document.getElementById('f-house').value,
+     document.getElementById('f-street').value,
+     document.getElementById('f-landmark').value,
+     document.getElementById('f-area').value,
+     document.getElementById('f-city').value,
+     document.getElementById('f-pin').value].filter(Boolean).join(', ');
+  const complaint={
+    id:complaintId,
+    date:new Date().toLocaleDateString('en-IN'),
+    name:document.getElementById('f-name').value,
+    mobile:document.getElementById('f-mobile').value,
+    email:document.getElementById('f-email').value,
+    ward:document.getElementById('f-ward').value,
+    address:addr,
+    gps:gpsLat?`${gpsLat}, ${gpsLng}`:'',
+    category:document.getElementById('f-category').value,
+    since:document.getElementById('f-since').value,
+    severity:document.getElementById('f-severity').value,
+    description:document.getElementById('f-desc').value,
+    letter:generatedLetter,
+    photoDataUrl:photoDataUrl||null,
+    status:'Submitted',
+    timestamp:Date.now()
+  };
+  // Save locally
+  complaints.unshift(complaint);
+  localStorage.setItem('adilabad_complaints',JSON.stringify(complaints));
+  // Send email via mailto (best effort in pure HTML)
+  sendMailto(complaint);
+  // Show success
+  document.getElementById('form-nav-btns').style.display='none';
+  document.querySelectorAll('.form-panel').forEach(p=>p.classList.remove('active'));
+  const sp=document.getElementById('success-page');
+  sp.classList.add('show');
+  document.getElementById('complaint-id-display').textContent=complaintId;
+  renderComplaints();
+  showToast('✅ Complaint submitted successfully!');
 }
 
 function sendMailto(c){
@@ -1685,8 +1689,7 @@ Note: Photo and voice attachments were submitted via the portal.
 Please check the admin dashboard for full media attachments.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Adilabad Public Complaint Portal | 504001`);
- // window.open(`work in progress?subject=${subject}&body=${body}`, '_blank');
-alert("This feature is a work in progress!");
+  window.open(`mailto:mcaadilabad5885@gmail.com?subject=${subject}&body=${body}`,'_blank');
 }
 
 function copyComplaintId(){
@@ -1721,53 +1724,6 @@ function resetForm(){
   document.getElementById('form-nav-btns').style.display='flex';
   showPanel(1);
 }
-  // ... structures inside your existing resetForm() function ...
-    const el = document.getElementById(id); if(el) el.value='';
-    });
-} // <--- THIS IS THE END OF YOUR RESETFORM FUNCTION
-
-// ====================================================
-// PASTE THE NEW CODE RIGHT HERE:
-// ====================================================
-function displayComplaintsInDashboard() {
-    const container = document.getElementById('admin-complaints-list') || document.getElementById('complaints-container');
-    if (!container) return;
-
-    let complaintsList = JSON.parse(localStorage.getItem('savedComplaints')) || [];
-    container.innerHTML = ''; 
-
-    if (complaintsList.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 text-center p-4">No complaints registered yet.</p>';
-        return;
-    }
-
-    complaintsList.forEach((complaint) => {
-        const card = document.createElement('div');
-        card.className = "p-4 mb-4 border rounded bg-white shadow-sm text-gray-800"; 
-        card.innerHTML = `
-            <div class="flex justify-between items-center mb-2 border-b pb-1">
-                <span class="font-bold text-blue-600">ID: ${complaint.id}</span>
-                <span class="text-sm text-gray-500">${complaint.date}</span>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm mb-2">
-                <p><strong>Citizen:</strong> ${complaint.name} (${complaint.mobile})</p>
-                <p><strong>Category:</strong> ${complaint.category} (Ward: ${complaint.ward})</p>
-                <p class="md:col-span-2"><strong>Address:</strong> ${complaint.house}, ${complaint.street}, ${complaint.landmark}, ${complaint.area}</p>
-            </div>
-            <div class="mt-2 p-2 bg-gray-50 rounded text-xs max-h-32 overflow-y-auto whitespace-pre-wrap border">
-                <strong>Letter Record:</strong>\n${complaint.letter}
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    displayComplaintsInDashboard();
-});
-// ====================================================
-
-// (Your existing password functions or closing </script> tag will be right below here)
 
 /* ===== TRACK ===== */
 function trackComplaint(){
@@ -1859,18 +1815,1904 @@ function sendEmailFromLetter(){
   const category=document.getElementById('f-category').value||'Civic Issue';
   const subject=encodeURIComponent(`Complaint: ${category} – Adilabad 504001`);
   const body=encodeURIComponent(generatedLetter);
-  window.open(`mailto:?subject=${subject}&body=${body}`,'_blank');
+  window.open(`mailto:mcaadilabad5885@gmail.com?subject=${subject}&body=${body}`,'_blank');
   showToast('📧 Opening email client…');
 }
 
+function copyComplaintLetter(){
+  if(!generatedLetter){showToast('⚠️ No complaint letter to copy.');return;}
+  navigator.clipboard.writeText(generatedLetter).then(()=>showToast('✅ Complaint copied to clipboard!')).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=generatedLetter;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    showToast('✅ Complaint copied!');
+  });
+}
+
+/* ===== ADMIN PASSWORD LOCK ===== */
+const ADMIN_PIN='9490';
+let adminUnlocked=false;
+
+function unlockAdmin(){
+  const pin=document.getElementById('admin-pin-input').value.trim();
+  const denied=document.getElementById('admin-denied');
+  if(pin===ADMIN_PIN){
+    adminUnlocked=true;
+    document.getElementById('admin-lock').style.display='none';
+    document.getElementById('admin-content').classList.add('unlocked');
+    denied.style.display='none';
+    updateAnalytics();
+    renderComplaints();
+    renderAdminPhotos();
+    showToast('🔓 Admin access granted!');
+  } else {
+    denied.style.display='block';
+    document.getElementById('admin-pin-input').value='';
+    document.getElementById('admin-pin-input').focus();
+    setTimeout(()=>denied.style.display='none',3000);
+  }
+}
+
+function lockAdmin(){
+  adminUnlocked=false;
+  document.getElementById('admin-lock').style.display='flex';
+  document.getElementById('admin-content').classList.remove('unlocked');
+  document.getElementById('admin-pin-input').value='';
+  showToast('🔒 Dashboard locked.');
+}
+
+function updateAnalytics(){
+  document.getElementById('an-total').textContent=complaints.length;
+  document.getElementById('an-submitted').textContent=complaints.filter(c=>c.status==='Submitted'||c.status==='Under Review').length;
+  document.getElementById('an-resolved').textContent=complaints.filter(c=>c.status==='Resolved').length;
+  document.getElementById('an-inprogress').textContent=complaints.filter(c=>c.status==='In Progress').length;
+}
+
+function renderAdminPhotos(){
+  const gallery=document.getElementById('admin-photo-gallery');
+  const photosWithData=complaints.filter(c=>c.photoDataUrl);
+  if(!photosWithData.length){
+    gallery.innerHTML='<div style="color:var(--gray-500);font-size:.82rem;align-self:center" id="no-photos-txt">No photos submitted yet.</div>';
+    return;
+  }
+  gallery.innerHTML=photosWithData.map(c=>`
+    <div style="position:relative;border-radius:var(--radius);overflow:hidden;border:2px solid var(--gray-200);cursor:pointer" title="${esc(c.id)} – ${esc(c.category)}">
+      <img src="${c.photoDataUrl}" style="width:90px;height:90px;object-fit:cover;display:block" alt="${esc(c.id)}"/>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);color:#fff;font-size:.6rem;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.id)}</div>
+    </div>`).join('');
+}
+
+// Init
+renderComplaints();
+setProgress(1);
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Adilabad Public Complaint Portal – 504001</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#E8500A;
+  --orange-dark:#C23F00;
+  --orange-light:#FF6B2B;
+  --orange-pale:#FFF3ED;
+  --white:#FFFFFF;
+  --off-white:#F9F6F3;
+  --gray-50:#F8F8F8;
+  --gray-100:#EFEFEF;
+  --gray-200:#E0E0E0;
+  --gray-400:#9E9E9E;
+  --gray-600:#666666;
+  --gray-800:#333333;
+  --green:#1A7A4A;
+  --green-light:#E8F5EE;
+  --red:#C62828;
+  --red-light:#FFEBEE;
+  --blue:#1565C0;
+  --blue-light:#E3F0FF;
+  --shadow-sm:0 1px 4px rgba(0,0,0,.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,.12);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.16);
+  --radius:10px;
+  --radius-lg:16px;
+  --transition:.22s ease;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans',sans-serif;color:var(--gray-800);background:var(--off-white);line-height:1.6;min-height:100vh}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+input,select,textarea{font-family:inherit}
+.hidden{display:none!important}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--gray-100)}
+::-webkit-scrollbar-thumb{background:var(--orange);border-radius:3px}
+
+/* ===== HEADER / NAVBAR ===== */
+#main-header{
+  background:linear-gradient(135deg,var(--orange-dark) 0%,var(--orange) 60%,var(--orange-light) 100%);
+  position:sticky;top:0;z-index:1000;
+  box-shadow:0 2px 12px rgba(200,60,0,.3);
+}
+.header-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 20px;max-width:1200px;margin:0 auto;gap:12px;flex-wrap:wrap;
+}
+.logo-area{display:flex;align-items:center;gap:12px}
+.logo-emblem{
+  width:52px;height:52px;border-radius:50%;
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:28px;box-shadow:0 2px 8px rgba(0,0,0,.2);flex-shrink:0;
+}
+.logo-text h1{font-size:1.05rem;font-weight:700;color:#fff;line-height:1.2}
+.logo-text p{font-size:.72rem;color:rgba(255,255,255,.85);line-height:1.3}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lang-btn{
+  padding:5px 12px;border-radius:20px;font-size:.78rem;font-weight:600;
+  background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.4);
+  transition:var(--transition);
+}
+.lang-btn:hover,.lang-btn.active{background:#fff;color:var(--orange);}
+.hamburger{display:none;flex-direction:column;gap:5px;padding:6px;background:rgba(255,255,255,.15);border-radius:8px}
+.hamburger span{width:22px;height:2px;background:#fff;border-radius:2px;transition:var(--transition)}
+
+/* ===== MARQUEE ===== */
+.marquee-bar{
+  background:rgba(0,0,0,.22);padding:7px 0;overflow:hidden;
+}
+.marquee-inner{
+  display:flex;white-space:nowrap;animation:marquee 22s linear infinite;
+  font-size:.82rem;color:#fff;font-weight:600;letter-spacing:.5px;
+}
+.marquee-inner span{padding-right:80px}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ===== CAROUSEL ===== */
+.carousel-section{background:#1a1a1a;position:relative;overflow:hidden;height:280px}
+@media(min-width:768px){.carousel-section{height:380px}}
+@media(min-width:1024px){.carousel-section{height:460px}}
+.carousel-track{display:flex;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.carousel-slide{
+  min-width:100%;height:100%;position:relative;
+  background:linear-gradient(135deg,#1a1a1a,#2d1000);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.carousel-slide-content{text-align:center;color:#fff;padding:20px;z-index:2;position:relative}
+.carousel-slide-content .slide-icon{font-size:4rem;margin-bottom:12px;display:block}
+.carousel-slide-content h2{font-size:1.4rem;font-weight:700;margin-bottom:8px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.carousel-slide-content p{font-size:.9rem;opacity:.85;max-width:500px;margin:0 auto}
+.carousel-bg{
+  position:absolute;inset:0;opacity:.12;font-size:18rem;
+  display:flex;align-items:center;justify-content:center;pointer-events:none;
+}
+.carousel-prev,.carousel-next{
+  position:absolute;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,.18);color:#fff;
+  width:40px;height:40px;border-radius:50%;font-size:1.2rem;z-index:10;
+  transition:var(--transition);display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,.25);
+}
+.carousel-prev{left:12px}.carousel-next{right:12px}
+.carousel-prev:hover,.carousel-next:hover{background:var(--orange)}
+.carousel-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.carousel-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;transition:var(--transition)}
+.carousel-dot.active{background:#fff;width:24px;border-radius:4px}
+
+/* ===== MAIN NAV ===== */
+.main-nav{background:var(--white);border-bottom:2px solid var(--orange-pale);display:none}
+.main-nav.open{display:block}
+@media(min-width:768px){.main-nav{display:block}}
+.nav-links{
+  display:flex;list-style:none;
+  max-width:1200px;margin:0 auto;padding:0 20px;
+  overflow-x:auto;gap:4px;
+}
+.nav-links li a{
+  display:block;padding:10px 14px;font-size:.82rem;font-weight:600;
+  color:var(--gray-600);white-space:nowrap;border-bottom:3px solid transparent;
+  transition:var(--transition);
+}
+.nav-links li a:hover,.nav-links li a.active{color:var(--orange);border-bottom-color:var(--orange)}
+
+/* ===== CONTAINER ===== */
+.container{max-width:1200px;margin:0 auto;padding:0 16px}
+@media(min-width:768px){.container{padding:0 24px}}
+
+/* ===== SECTION STYLES ===== */
+section{padding:44px 0}
+.section-label{
+  font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--orange);margin-bottom:8px;
+}
+.section-title{font-size:1.7rem;font-weight:700;color:var(--gray-800);margin-bottom:10px;line-height:1.25}
+.section-sub{color:var(--gray-600);font-size:.95rem;max-width:600px;margin-bottom:32px}
+
+/* ===== WELCOME SECTION ===== */
+#welcome{background:var(--white)}
+.welcome-grid{display:grid;gap:28px}
+@media(min-width:768px){.welcome-grid{grid-template-columns:1fr 1fr;align-items:center}}
+.welcome-text .section-sub{margin-bottom:0}
+.stat-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:20px}
+.stat-card{
+  flex:1;min-width:110px;padding:16px;border-radius:var(--radius);
+  background:var(--orange-pale);border-left:4px solid var(--orange);text-align:center;
+}
+.stat-num{font-size:1.5rem;font-weight:700;color:var(--orange)}
+.stat-lbl{font-size:.72rem;color:var(--gray-600);margin-top:2px}
+.category-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:480px){.category-grid{grid-template-columns:repeat(4,1fr)}}
+.cat-card{
+  padding:14px 10px;border-radius:var(--radius);background:var(--gray-50);
+  border:1.5px solid var(--gray-200);text-align:center;
+  transition:var(--transition);cursor:default;
+}
+.cat-card:hover{border-color:var(--orange);background:var(--orange-pale);transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.cat-icon{font-size:1.8rem;display:block;margin-bottom:6px}
+.cat-name{font-size:.72rem;font-weight:600;color:var(--gray-700)}
+
+/* ===== HOW IT WORKS ===== */
+#how-it-works{background:var(--off-white)}
+.steps-grid{display:grid;gap:20px}
+@media(min-width:768px){.steps-grid{grid-template-columns:repeat(3,1fr)}}
+.step-card{
+  background:var(--white);border-radius:var(--radius-lg);padding:24px;
+  box-shadow:var(--shadow-sm);border-top:4px solid var(--orange);
+  transition:var(--transition);
+}
+.step-card:hover{box-shadow:var(--shadow-md);transform:translateY(-3px)}
+.step-num{
+  width:36px;height:36px;border-radius:50%;background:var(--orange);color:#fff;
+  font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;
+  margin-bottom:14px;
+}
+.step-card h3{font-size:1rem;font-weight:700;margin-bottom:6px;color:var(--gray-800)}
+.step-card p{font-size:.85rem;color:var(--gray-600)}
+
+/* ===== COMPLAINT FORM SECTION ===== */
+#complaint{background:var(--white)}
+.form-wrapper{
+  background:var(--white);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);overflow:hidden;max-width:820px;margin:0 auto;
+  border:1.5px solid var(--gray-200);
+}
+/* Progress bar */
+.form-progress{background:var(--orange-pale);padding:20px 24px;border-bottom:2px solid var(--gray-200)}
+.progress-steps{display:flex;align-items:center;gap:0}
+.prog-step{
+  display:flex;flex-direction:column;align-items:center;flex:1;position:relative;
+}
+.prog-step:not(:last-child)::after{
+  content:'';position:absolute;top:16px;left:50%;right:-50%;
+  height:2px;background:var(--gray-200);z-index:0;
+}
+.prog-step.done:not(:last-child)::after,.prog-step.active:not(:last-child)::after{background:var(--orange)}
+.prog-num{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--gray-200);color:var(--gray-600);
+  font-weight:700;font-size:.82rem;display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:1;transition:var(--transition);border:2px solid var(--gray-200);
+}
+.prog-step.active .prog-num{background:var(--orange);color:#fff;border-color:var(--orange)}
+.prog-step.done .prog-num{background:var(--green);color:#fff;border-color:var(--green)}
+.prog-label{font-size:.65rem;font-weight:600;color:var(--gray-600);margin-top:5px;text-align:center;white-space:nowrap}
+.prog-step.active .prog-label{color:var(--orange)}
+
+/* Form panels */
+.form-panel{display:none;padding:28px 24px 20px}
+.form-panel.active{display:block}
+.form-panel h3{font-size:1.1rem;font-weight:700;margin-bottom:4px;color:var(--gray-800)}
+.form-panel .panel-sub{font-size:.82rem;color:var(--gray-600);margin-bottom:20px}
+
+/* Fields */
+.field-row{display:grid;gap:14px;margin-bottom:14px}
+@media(min-width:560px){.field-row.two{grid-template-columns:1fr 1fr}}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.82rem;font-weight:600;color:var(--gray-700)}
+.field label .req{color:var(--red);margin-left:2px}
+.field input,.field select,.field textarea{
+  padding:10px 14px;border-radius:var(--radius);border:1.5px solid var(--gray-200);
+  font-size:.9rem;color:var(--gray-800);background:var(--white);
+  transition:var(--transition);outline:none;width:100%;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,80,10,.1)}
+.field input.error,.field select.error,.field textarea.error{border-color:var(--red);background:var(--red-light)}
+.field .hint{font-size:.72rem;color:var(--gray-500);margin-top:2px}
+.field .err-msg{font-size:.72rem;color:var(--red);margin-top:2px;display:none}
+.field.has-error .err-msg{display:block}
+
+/* Photo upload */
+.photo-upload-area{
+  border:2.5px dashed var(--gray-300);border-radius:var(--radius-lg);
+  padding:32px 20px;text-align:center;cursor:pointer;
+  transition:var(--transition);background:var(--gray-50);
+  position:relative;overflow:hidden;
+}
+.photo-upload-area:hover{border-color:var(--orange);background:var(--orange-pale)}
+.photo-upload-area.has-photo{border-style:solid;border-color:var(--green)}
+.upload-icon{font-size:2.5rem;margin-bottom:10px;display:block}
+.photo-upload-area h4{font-size:.95rem;font-weight:700;color:var(--gray-700);margin-bottom:4px}
+.photo-upload-area p{font-size:.78rem;color:var(--gray-500)}
+.photo-btns{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.btn-camera,.btn-gallery{
+  padding:9px 18px;border-radius:8px;font-size:.82rem;font-weight:600;
+  display:flex;align-items:center;gap:6px;transition:var(--transition);
+}
+.btn-camera{background:var(--orange);color:#fff}
+.btn-camera:hover{background:var(--orange-dark)}
+.btn-gallery{background:var(--white);color:var(--orange);border:1.5px solid var(--orange)}
+.btn-gallery:hover{background:var(--orange-pale)}
+#photo-preview{max-height:220px;border-radius:var(--radius);margin:12px auto 0;display:block;object-fit:cover;max-width:100%}
+
+/* Location */
+.loc-detect-btn{
+  width:100%;padding:12px;border-radius:var(--radius);
+  background:var(--blue);color:#fff;font-weight:600;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:var(--transition);margin-bottom:16px;
+}
+.loc-detect-btn:hover{background:#0D47A1}
+.loc-status{
+  padding:10px 14px;border-radius:var(--radius);font-size:.82rem;margin-bottom:14px;
+  display:none;align-items:center;gap:8px;
+}
+.loc-status.success{background:var(--green-light);color:var(--green);border:1px solid #A5D6A7;display:flex}
+.loc-status.error{background:var(--red-light);color:var(--red);border:1px solid #FFCDD2;display:flex}
+.manual-loc{display:none}
+.manual-loc.show{display:block}
+.divider-or{
+  display:flex;align-items:center;gap:10px;margin:16px 0;
+  font-size:.75rem;color:var(--gray-500);font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+}
+.divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:var(--gray-200)}
+
+/* Voice recording */
+.voice-section{border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:16px;margin-top:4px}
+.voice-section h4{font-size:.85rem;font-weight:700;margin-bottom:10px;color:var(--gray-700);display:flex;align-items:center;gap:6px}
+.voice-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn-record,.btn-stop-record{
+  padding:8px 16px;border-radius:8px;font-size:.82rem;font-weight:600;
+  display:flex;align-items:center;gap:6px;transition:var(--transition);
+}
+.btn-record{background:var(--red);color:#fff}
+.btn-record:hover{background:#B71C1C}
+.btn-stop-record{background:var(--gray-600);color:#fff;display:none}
+.btn-stop-record:hover{background:var(--gray-800)}
+#recording-indicator{display:none;align-items:center;gap:6px;font-size:.78rem;color:var(--red);font-weight:600}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+#voice-playback{margin-top:10px;width:100%;display:none}
+#voice-file-upload{margin-top:8px}
+
+/* AI Generator */
+.ai-panel{
+  background:linear-gradient(135deg,#1A1A2E,#16213E);
+  border-radius:var(--radius-lg);padding:20px;margin-top:6px;
+}
+.ai-panel h4{color:#fff;font-size:.95rem;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.ai-panel .ai-sub{color:rgba(255,255,255,.65);font-size:.78rem;margin-bottom:14px}
+.ai-output{
+  background:rgba(255,255,255,.06);border-radius:var(--radius);
+  padding:14px;font-size:.82rem;color:rgba(255,255,255,.85);
+  white-space:pre-wrap;line-height:1.7;display:none;border:1px solid rgba(255,255,255,.12);
+  max-height:280px;overflow-y:auto;
+}
+.ai-output.visible{display:block}
+.btn-generate{
+  width:100%;padding:12px;border-radius:var(--radius);
+  background:linear-gradient(135deg,var(--orange),var(--orange-light));
+  color:#fff;font-weight:700;font-size:.9rem;margin-top:10px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:var(--transition);
+}
+.btn-generate:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,80,10,.4)}
+.btn-generate:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.ai-loading{display:none;color:rgba(255,255,255,.7);font-size:.82rem;text-align:center;padding:10px}
+
+/* Form nav buttons */
+.form-nav{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 24px;border-top:1.5px solid var(--gray-100);
+  background:var(--gray-50);
+}
+.btn-prev,.btn-next,.btn-submit{
+  padding:11px 24px;border-radius:var(--radius);font-size:.88rem;font-weight:700;
+  transition:var(--transition);display:flex;align-items:center;gap:6px;
+}
+.btn-prev{background:var(--white);color:var(--gray-700);border:1.5px solid var(--gray-300)}
+.btn-prev:hover{border-color:var(--orange);color:var(--orange)}
+.btn-next{background:var(--orange);color:#fff}
+.btn-next:hover{background:var(--orange-dark);transform:translateX(2px)}
+.btn-submit{background:var(--green);color:#fff}
+.btn-submit:hover{background:#145A35;transform:translateY(-1px)}
+
+/* Success page */
+#success-page{
+  display:none;padding:40px 24px;text-align:center;
+}
+#success-page.show{display:block}
+.success-icon{font-size:4rem;display:block;margin:0 auto 16px;animation:pop .4s ease}
+@keyframes pop{0%{transform:scale(.5)}70%{transform:scale(1.1)}100%{transform:scale(1)}}
+.complaint-id-box{
+  display:inline-block;background:var(--orange-pale);
+  border:2px dashed var(--orange);border-radius:var(--radius-lg);
+  padding:16px 28px;margin:16px auto;
+}
+.complaint-id-label{font-size:.72rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:1px}
+.complaint-id-value{font-size:1.8rem;font-weight:800;color:var(--orange-dark);letter-spacing:2px;font-family:monospace}
+.copy-id-btn{
+  font-size:.78rem;color:var(--orange);border:1px solid var(--orange);
+  padding:4px 12px;border-radius:20px;margin-top:8px;transition:var(--transition);display:inline-block;
+}
+.copy-id-btn:hover{background:var(--orange);color:#fff}
+
+/* ===== ADMIN SECTION ===== */
+#admin{background:var(--off-white)}
+.admin-box{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);overflow:hidden}
+.admin-toolbar{
+  padding:16px 20px;border-bottom:1.5px solid var(--gray-200);
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+}
+.admin-toolbar input,.admin-toolbar select{
+  padding:8px 12px;border-radius:var(--radius);border:1.5px solid var(--gray-200);
+  font-size:.82rem;outline:none;flex:1;min-width:140px;
+}
+.admin-toolbar input:focus,.admin-toolbar select:focus{border-color:var(--orange)}
+.btn-search{
+  padding:8px 18px;border-radius:var(--radius);background:var(--orange);
+  color:#fff;font-size:.82rem;font-weight:700;transition:var(--transition);
+}
+.btn-search:hover{background:var(--orange-dark)}
+.complaints-table-wrap{overflow-x:auto}
+.complaints-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.complaints-table th{
+  background:var(--orange);color:#fff;padding:11px 14px;text-align:left;
+  white-space:nowrap;font-weight:600;
+}
+.complaints-table td{padding:11px 14px;border-bottom:1px solid var(--gray-100);vertical-align:top}
+.complaints-table tr:hover td{background:var(--orange-pale)}
+.status-badge{
+  padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap;
+}
+.status-submitted{background:#E3F0FF;color:#1565C0}
+.status-under-review{background:#FFF8E1;color:#F57F17}
+.status-in-progress{background:#E8F5E9;color:#2E7D32}
+.status-resolved{background:#E8F5EE;color:var(--green)}
+.empty-state{padding:40px;text-align:center;color:var(--gray-500)}
+.empty-state .empty-icon{font-size:3rem;margin-bottom:10px;display:block}
+
+/* ===== FOOTER ===== */
+footer{
+  background:linear-gradient(135deg,#1a1a1a,#2d1000);
+  color:rgba(255,255,255,.8);padding:36px 0 16px;
+}
+.footer-grid{display:grid;gap:28px;margin-bottom:28px}
+@media(min-width:768px){.footer-grid{grid-template-columns:2fr 1fr 1fr}}
+.footer-brand h3{color:#fff;font-size:1.1rem;font-weight:700;margin-bottom:8px}
+.footer-brand p{font-size:.82rem;line-height:1.7}
+.footer-col h4{color:#fff;font-size:.88rem;font-weight:700;margin-bottom:10px}
+.footer-col ul{list-style:none}
+.footer-col ul li{margin-bottom:7px;font-size:.82rem}
+.footer-col ul li a:hover{color:var(--orange-light)}
+.footer-bottom{
+  border-top:1px solid rgba(255,255,255,.1);padding-top:16px;
+  text-align:center;font-size:.75rem;color:rgba(255,255,255,.5);
+  line-height:2;
+}
+.footer-bottom a{color:var(--orange-light)}
+.heart{color:var(--orange-light)}
+
+/* ===== ADMIN LOCK OVERLAY ===== */
+.admin-lock-overlay{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 24px;text-align:center;
+}
+.admin-lock-icon{font-size:4rem;margin-bottom:16px;display:block}
+.admin-lock-overlay h3{font-size:1.2rem;font-weight:800;margin-bottom:6px;color:var(--gray-800)}
+.admin-lock-overlay p{font-size:.88rem;color:var(--gray-600);margin-bottom:20px}
+.admin-pin-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.admin-pin-input{
+  padding:12px 18px;border-radius:var(--radius);border:2px solid var(--gray-200);
+  font-size:1.2rem;font-weight:700;letter-spacing:6px;text-align:center;width:140px;
+  outline:none;transition:var(--transition);
+}
+.admin-pin-input:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,80,10,.1)}
+.btn-admin-unlock{
+  padding:12px 24px;border-radius:var(--radius);background:var(--orange);
+  color:#fff;font-weight:700;font-size:.9rem;transition:var(--transition);
+}
+.btn-admin-unlock:hover{background:var(--orange-dark);transform:translateY(-1px)}
+.admin-access-denied{
+  margin-top:14px;padding:10px 20px;background:var(--red-light);color:var(--red);
+  border-radius:var(--radius);font-weight:700;font-size:.88rem;display:none;
+  border:1px solid #FFCDD2;
+}
+.admin-content{display:none}
+.admin-content.unlocked{display:block}
+.btn-admin-logout{
+  padding:6px 16px;border-radius:20px;border:1.5px solid var(--red);
+  color:var(--red);font-size:.78rem;font-weight:700;transition:var(--transition);
+  margin-left:auto;display:block;margin-bottom:12px;width:fit-content;
+}
+.btn-admin-logout:hover{background:var(--red);color:#fff}
+.analytics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px}
+@media(min-width:600px){.analytics-grid{grid-template-columns:repeat(4,1fr)}}
+.analytics-card{
+  background:var(--white);border-radius:var(--radius);padding:16px;text-align:center;
+  border-left:4px solid var(--orange);box-shadow:var(--shadow-sm);
+}
+.analytics-num{font-size:1.8rem;font-weight:800;color:var(--orange)}
+.analytics-lbl{font-size:.72rem;color:var(--gray-600);margin-top:3px;font-weight:600}
+.ai-action-btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.btn-send-email{
+  flex:1;min-width:160px;padding:13px 20px;border-radius:var(--radius);
+  background:linear-gradient(135deg,#1565C0,#1976D2);color:#fff;font-weight:700;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:var(--transition);box-shadow:0 3px 12px rgba(21,101,192,.35);
+}
+.btn-send-email:hover{background:linear-gradient(135deg,#0D47A1,#1565C0);transform:translateY(-1px);box-shadow:0 5px 18px rgba(21,101,192,.45)}
+.btn-copy-complaint{
+  flex:1;min-width:140px;padding:13px 20px;border-radius:var(--radius);
+  background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:.9rem;border:1.5px solid rgba(255,255,255,.3);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:var(--transition);
+}
+.btn-copy-complaint:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.6)}
+
+/* ===== BACK TO TOP ===== */
+#back-top{
+  position:fixed;bottom:24px;right:20px;
+  width:44px;height:44px;border-radius:50%;
+  background:var(--orange);color:#fff;font-size:1.2rem;
+  box-shadow:var(--shadow-md);display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:var(--transition);z-index:500;
+}
+#back-top.show{opacity:1;pointer-events:auto}
+#back-top:hover{background:var(--orange-dark);transform:translateY(-2px)}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--gray-800);color:#fff;padding:10px 22px;
+  border-radius:30px;font-size:.82rem;z-index:2000;
+  opacity:0;pointer-events:none;transition:all .3s ease;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:767px){
+  .hamburger{display:flex}
+  .logo-text h1{font-size:.9rem}
+  .section-title{font-size:1.35rem}
+  .form-panel{padding:20px 16px 16px}
+  .form-nav{padding:14px 16px}
+  .form-progress{padding:14px 16px}
+  .prog-label{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="main-header">
+  <div class="header-top">
+    <div class="logo-area">
+      <div class="logo-emblem">🏛️</div>
+      <div class="logo-text">
+        <h1 id="site-title">Adilabad Public Complaint Portal</h1>
+        <p id="site-sub">Adilabad – 504001 | Telangana Government</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('te')">తె</button>
+      <button class="lang-btn" onclick="setLang('hi')">हि</button>
+      <button class="hamburger" id="hamburger-btn" onclick="toggleNav()">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <!-- Marquee -->
+  <div class="marquee-bar">
+    <div class="marquee-inner">
+      <span id="marquee-text">📢 Adilabad 504001 Public Complaint Portal – Report Civic Issues | Damaged Roads • Potholes • Garbage • Water Leakage • Drainage • Street Lights • Public Property Damage</span>
+      <span id="marquee-text2">📢 Adilabad 504001 Public Complaint Portal – Report Civic Issues | Damaged Roads • Potholes • Garbage • Water Leakage • Drainage • Street Lights • Public Property Damage</span>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="main-nav" id="main-nav">
+  <ul class="nav-links">
+    <li><a href="#welcome" class="nav-link" data-key="nav_home">🏠 Home</a></li>
+    <li><a href="#how-it-works" class="nav-link" data-key="nav_how">📋 How It Works</a></li>
+    <li><a href="#complaint" class="nav-link" data-key="nav_complaint">📝 File Complaint</a></li>
+    <li><a href="#track" class="nav-link" data-key="nav_track">🔍 Track Complaint</a></li>
+    <li><a href="#admin" class="nav-link" data-key="nav_admin">⚙️ Admin Dashboard</a></li>
+  </ul>
+</nav>
+
+<!-- CAROUSEL -->
+<section class="carousel-section">
+  <div class="carousel-track" id="carousel-track">
+    <div class="carousel-slide">
+      <div class="carousel-bg">🛣️</div>
+      <div class="carousel-slide-content">
+        <span class="slide-icon">🛣️</span>
+        <h2 id="slide1-title">Report Road Damage</h2>
+        <p id="slide1-sub">Potholes, damaged surfaces and broken roads — report them instantly for prompt action.</p>
+      </div>
+    </div>
+    <div class="carousel-slide" style="background:linear-gradient(135deg,#0d2b1a,#1a4a2e)">
+      <div class="carousel-bg" style="opacity:.1">🌊</div>
+      <div class="carousel-slide-content">
+        <span class="slide-icon">💧</span>
+        <h2 id="slide2-title">Water & Drainage Issues</h2>
+        <p id="slide2-sub">Leakages, overflowing drains and waterlogging — your complaint reaches the right authority.</p>
+      </div>
+    </div>
+    <div class="carousel-slide" style="background:linear-gradient(135deg,#1a2d00,#2d4a00)">
+      <div class="carousel-bg" style="opacity:.1">🗑️</div>
+      <div class="carousel-slide-content">
+        <span class="slide-icon">♻️</span>
+        <h2 id="slide3-title">Garbage & Sanitation</h2>
+        <p id="slide3-sub">Report uncollected garbage, open dumping or unsanitary public areas immediately.</p>
+      </div>
+    </div>
+    <div class="carousel-slide" style="background:linear-gradient(135deg,#1a1a00,#3d3000)">
+      <div class="carousel-bg" style="opacity:.1">💡</div>
+      <div class="carousel-slide-content">
+        <span class="slide-icon">💡</span>
+        <h2 id="slide4-title">Street Light Issues</h2>
+        <p id="slide4-sub">Dark streets are unsafe. Report non-working street lights and help keep your area safe.</p>
+      </div>
+    </div>
+  </div>
+  <button class="carousel-prev" onclick="carouselMove(-1)">‹</button>
+  <button class="carousel-next" onclick="carouselMove(1)">›</button>
+  <div class="carousel-dots" id="carousel-dots"></div>
+</section>
+
+<!-- WELCOME SECTION -->
+<section id="welcome">
+  <div class="container">
+    <div class="welcome-grid">
+      <div class="welcome-text">
+        <div class="section-label" id="welcome-label">Welcome to the Portal</div>
+        <h2 class="section-title" id="welcome-title">Your Voice Matters to Adilabad</h2>
+        <p class="section-sub" id="welcome-desc">The Adilabad Public Complaint Portal empowers citizens to report civic issues directly to the Municipal Corporation. Submit complaints with photos, your location and a description — our team acts swiftly.</p>
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-num">24/7</div><div class="stat-lbl" id="stat1">Always Open</div></div>
+          <div class="stat-card"><div class="stat-num">8+</div><div class="stat-lbl" id="stat2">Categories</div></div>
+          <div class="stat-card"><div class="stat-num">Fast</div><div class="stat-lbl" id="stat3">Response</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="category-grid">
+          <div class="cat-card"><span class="cat-icon">🛣️</span><div class="cat-name" id="cat1">Damaged Roads</div></div>
+          <div class="cat-card"><span class="cat-icon">🕳️</span><div class="cat-name" id="cat2">Potholes</div></div>
+          <div class="cat-card"><span class="cat-icon">🗑️</span><div class="cat-name" id="cat3">Garbage Issues</div></div>
+          <div class="cat-card"><span class="cat-icon">💧</span><div class="cat-name" id="cat4">Water Leakage</div></div>
+          <div class="cat-card"><span class="cat-icon">🚿</span><div class="cat-name" id="cat5">Drainage</div></div>
+          <div class="cat-card"><span class="cat-icon">💡</span><div class="cat-name" id="cat6">Street Lights</div></div>
+          <div class="cat-card"><span class="cat-icon">🏚️</span><div class="cat-name" id="cat7">Property Damage</div></div>
+          <div class="cat-card"><span class="cat-icon">📌</span><div class="cat-name" id="cat8">Other Issues</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-label" id="how-label">Simple Process</div>
+    <h2 class="section-title" id="how-title">How to File a Complaint</h2>
+    <p class="section-sub" id="how-sub">Just three easy steps to register your civic complaint and get it resolved.</p>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h3 id="step1-head">📸 Upload Photo</h3>
+        <p id="step1-body">Take a live photo or upload from your gallery. A clear photo helps officials identify and act on the issue faster.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h3 id="step2-head">📍 Share Location</h3>
+        <p id="step2-body">Allow GPS for automatic location detection, or enter your address manually. Accurate location ensures faster resolution.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h3 id="step3-head">📝 Describe & Submit</h3>
+        <p id="step3-body">Fill in your details, describe the problem, let AI generate a professional complaint letter, and submit.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPLAINT FORM -->
+<section id="complaint">
+  <div class="container">
+    <div class="section-label" id="form-label">File a Complaint</div>
+    <h2 class="section-title" id="form-title">Submit Your Complaint</h2>
+    <p class="section-sub" id="form-sub">All fields marked <span style="color:var(--red)">*</span> are required.</p>
+
+    <div class="form-wrapper">
+      <!-- Progress -->
+      <div class="form-progress">
+        <div class="progress-steps">
+          <div class="prog-step active" id="ps1">
+            <div class="prog-num">1</div>
+            <div class="prog-label" id="pl1">Photo</div>
+          </div>
+          <div class="prog-step" id="ps2">
+            <div class="prog-num">2</div>
+            <div class="prog-label" id="pl2">Location</div>
+          </div>
+          <div class="prog-step" id="ps3">
+            <div class="prog-num">3</div>
+            <div class="prog-label" id="pl3">Details</div>
+          </div>
+          <div class="prog-step" id="ps4">
+            <div class="prog-num">4</div>
+            <div class="prog-label" id="pl4">AI Letter</div>
+          </div>
+          <div class="prog-step" id="ps5">
+            <div class="prog-num">5</div>
+            <div class="prog-label" id="pl5">Submit</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 1: PHOTO -->
+      <div class="form-panel active" id="panel1">
+        <h3 id="p1-head">📸 Step 1: Upload Photo</h3>
+        <p class="panel-sub" id="p1-sub">A photo is required. Take a live picture or upload from gallery.</p>
+        <div class="photo-upload-area" id="photo-drop" onclick="document.getElementById('photo-input').click()">
+          <span class="upload-icon">📷</span>
+          <h4 id="upload-head">Tap to Add Photo</h4>
+          <p id="upload-sub">Accepted: JPG, PNG, WEBP (max 10 MB)</p>
+          <div class="photo-btns">
+            <button class="btn-camera" onclick="event.stopPropagation();openCamera()">📸 Camera</button>
+            <button class="btn-gallery" onclick="event.stopPropagation();document.getElementById('photo-input').click()">🖼️ Gallery</button>
+          </div>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)"/>
+        <img id="photo-preview" alt="Photo preview" style="display:none"/>
+        <p id="photo-err" style="color:var(--red);font-size:.78rem;margin-top:8px;display:none">⚠️ Please upload a photo to continue.</p>
+      </div>
+
+      <!-- PANEL 2: LOCATION -->
+      <div class="form-panel" id="panel2">
+        <h3 id="p2-head">📍 Step 2: Your Location</h3>
+        <p class="panel-sub" id="p2-sub">Allow GPS for auto-detection, or enter your address manually.</p>
+        <button class="loc-detect-btn" onclick="detectLocation()">
+          <span>📡</span> <span id="detect-btn-txt">Detect My Location</span>
+        </button>
+        <div class="loc-status" id="loc-status"></div>
+        <div class="field" style="margin-bottom:14px">
+          <label id="gps-label">GPS Coordinates</label>
+          <input type="text" id="gps-coords" readonly placeholder="Auto-detected…"/>
+        </div>
+        <div class="field" style="margin-bottom:14px">
+          <label id="auto-addr-label">Detected Address</label>
+          <textarea id="auto-address" rows="2" readonly placeholder="Auto-detected…" style="resize:none"></textarea>
+        </div>
+        <div class="divider-or" id="divider-or-txt">— OR ENTER MANUALLY —</div>
+        <div class="manual-loc show" id="manual-loc">
+          <div class="field-row two">
+            <div class="field">
+              <label id="house-lbl">House / Flat No.</label>
+              <input type="text" id="f-house" placeholder="e.g. 12-3-45"/>
+            </div>
+            <div class="field">
+              <label id="street-lbl">Street Name</label>
+              <input type="text" id="f-street" placeholder="e.g. Gandhi Road"/>
+            </div>
+          </div>
+          <div class="field-row two">
+            <div class="field">
+              <label id="landmark-lbl">Landmark</label>
+              <input type="text" id="f-landmark" placeholder="e.g. Near Temple"/>
+            </div>
+            <div class="field">
+              <label id="area-lbl">Area / Colony</label>
+              <input type="text" id="f-area" placeholder="e.g. Shantinagar"/>
+            </div>
+          </div>
+          <div class="field-row two">
+            <div class="field">
+              <label id="city-lbl">City</label>
+              <input type="text" id="f-city" value="Adilabad"/>
+            </div>
+            <div class="field">
+              <label id="pin-lbl">Pincode</label>
+              <input type="text" id="f-pin" value="504001" maxlength="6"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 3: DETAILS -->
+      <div class="form-panel" id="panel3">
+        <h3 id="p3-head">📝 Step 3: Complaint Details</h3>
+        <p class="panel-sub" id="p3-sub">Please fill in all required fields accurately.</p>
+        <div class="field-row two">
+          <div class="field" id="fn-field">
+            <label id="fn-lbl">Full Name <span class="req">*</span></label>
+            <input type="text" id="f-name" placeholder="Your full name"/>
+            <span class="err-msg">Name is required.</span>
+          </div>
+          <div class="field" id="mob-field">
+            <label id="mob-lbl">Mobile Number <span class="req">*</span></label>
+            <input type="tel" id="f-mobile" placeholder="+91 XXXXX XXXXX" maxlength="13"/>
+            <span class="err-msg">Enter a valid 10-digit number.</span>
+          </div>
+        </div>
+        <div class="field-row two">
+          <div class="field" id="email-field">
+            <label id="email-lbl">Email Address <span class="req">*</span></label>
+            <input type="email" id="f-email" placeholder="you@example.com"/>
+            <span class="err-msg">Enter a valid email.</span>
+          </div>
+          <div class="field">
+            <label id="ward-lbl">Ward Number (Optional)</label>
+            <input type="text" id="f-ward" placeholder="e.g. Ward 12"/>
+          </div>
+        </div>
+        <div class="field" id="cat-field" style="margin-bottom:14px">
+          <label id="cat-lbl">Problem Category <span class="req">*</span></label>
+          <select id="f-category">
+            <option value="" id="cat-placeholder">-- Select Category --</option>
+            <option value="Damaged Road" id="opt1">🛣️ Damaged Road</option>
+            <option value="Potholes" id="opt2">🕳️ Potholes</option>
+            <option value="Garbage Issues" id="opt3">🗑️ Garbage Issues</option>
+            <option value="Water Leakage" id="opt4">💧 Water Leakage</option>
+            <option value="Drainage Problems" id="opt5">🚿 Drainage Problems</option>
+            <option value="Street Light Issues" id="opt6">💡 Street Light Issues</option>
+            <option value="Public Property Damage" id="opt7">🏚️ Public Property Damage</option>
+            <option value="Other" id="opt8">📌 Other Civic Issues</option>
+          </select>
+          <span class="err-msg">Please select a category.</span>
+        </div>
+        <div class="field" id="desc-field" style="margin-bottom:14px">
+          <label id="desc-lbl">Problem Description <span class="req">*</span></label>
+          <textarea id="f-desc" rows="4" placeholder="Describe the issue in detail…"></textarea>
+          <div class="hint" id="desc-hint">Minimum 20 characters</div>
+          <span class="err-msg">Please describe the problem (min 20 chars).</span>
+        </div>
+        <div class="field-row two">
+          <div class="field">
+            <label id="since-lbl">Issue Since <span class="req">*</span></label>
+            <input type="text" id="f-since" placeholder="e.g. 2 weeks, 3 months"/>
+          </div>
+          <div class="field">
+            <label id="severity-lbl">Severity</label>
+            <select id="f-severity">
+              <option value="Low">Low – Minor inconvenience</option>
+              <option value="Medium" selected>Medium – Affecting daily life</option>
+              <option value="High">High – Safety hazard</option>
+              <option value="Critical">Critical – Immediate danger</option>
+            </select>
+          </div>
+        </div>
+        <!-- Voice -->
+        <div class="voice-section" style="margin-top:14px">
+          <h4>🎙️ <span id="voice-head">Voice Complaint (Optional)</span></h4>
+          <div class="voice-controls">
+            <button class="btn-record" id="btn-record" onclick="startRecording()">🔴 Record</button>
+            <button class="btn-stop-record" id="btn-stop" onclick="stopRecording()">⏹ Stop</button>
+            <div id="recording-indicator"><div class="pulse-dot"></div> <span id="rec-label">Recording…</span></div>
+          </div>
+          <audio id="voice-playback" controls></audio>
+          <div class="field" id="voice-file-upload" style="margin-top:10px">
+            <label id="voice-upload-lbl">Or Upload Audio File</label>
+            <input type="file" id="f-voice-file" accept="audio/*"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 4: AI LETTER -->
+      <div class="form-panel" id="panel4">
+        <h3 id="p4-head">🤖 Step 4: AI Complaint Letter</h3>
+        <p class="panel-sub" id="p4-sub">Our AI will generate a professional complaint letter based on your details.</p>
+        <div class="ai-panel">
+          <h4>✨ <span id="ai-head">Smart Complaint Generator</span></h4>
+          <p class="ai-sub" id="ai-sub">Click below to generate a professional letter addressed to the Municipal Commissioner.</p>
+          <button class="btn-generate" id="btn-generate" onclick="generateLetter()">
+            ✨ <span id="gen-btn-txt">Generate Complaint Letter</span>
+          </button>
+          <div class="ai-loading" id="ai-loading">⏳ <span id="ai-loading-txt">Generating your letter…</span></div>
+          <div class="ai-output" id="ai-output"></div>
+          <!-- Action buttons shown after letter is generated -->
+          <div class="ai-action-btns" id="ai-action-btns" style="display:none">
+            <button class="btn-send-email" onclick="sendEmailFromLetter()">
+              📧 Send Email
+            </button>
+            <button class="btn-copy-complaint" onclick="copyComplaintLetter()">
+              📋 Copy Complaint
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 5: REVIEW & SUBMIT -->
+      <div class="form-panel" id="panel5">
+        <h3 id="p5-head">✅ Step 5: Review & Submit</h3>
+        <p class="panel-sub" id="p5-sub">Review your complaint details before submitting.</p>
+        <div id="review-box" style="background:var(--gray-50);border-radius:var(--radius);padding:16px;font-size:.83rem;line-height:1.9;border:1.5px solid var(--gray-200)"></div>
+        <div style="margin-top:16px;padding:12px;background:var(--orange-pale);border-radius:var(--radius);font-size:.78rem;color:var(--orange-dark);border:1px solid rgba(232,80,10,.2)">
+          <strong>📧 <span id="submit-note-head">Submission Note:</span></strong> <span id="submit-note">Your complaint with all attachments will be sent to the Municipal Corporation, Adilabad via email. A unique Complaint ID will be generated for tracking.</span>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div id="success-page">
+        <span class="success-icon">✅</span>
+        <h3 style="font-size:1.3rem;font-weight:800;margin-bottom:6px" id="success-head">Complaint Submitted!</h3>
+        <p style="color:var(--gray-600);font-size:.88rem;margin-bottom:4px" id="success-sub">Your complaint has been received. Save your Complaint ID for tracking.</p>
+        <div class="complaint-id-box">
+          <div class="complaint-id-label" id="cid-label">Your Complaint ID</div>
+          <div class="complaint-id-value" id="complaint-id-display">APC-2026-000000</div>
+          <button class="copy-id-btn" onclick="copyComplaintId()" id="copy-btn">📋 Copy ID</button>
+        </div>
+        <p style="font-size:.78rem;color:var(--gray-500);margin-top:8px" id="email-sent-note">Confirmation email sent to the Municipal Corporation, Adilabad.</p>
+        <button onclick="resetForm()" style="margin-top:18px;padding:10px 28px;border-radius:var(--radius);background:var(--orange);color:#fff;font-weight:700;font-size:.88rem;transition:var(--transition)" id="new-complaint-btn">+ File Another Complaint</button>
+      </div>
+
+      <!-- NAV BUTTONS -->
+      <div class="form-nav" id="form-nav-btns">
+        <button class="btn-prev" id="btn-prev" onclick="panelNav(-1)" style="visibility:hidden">‹ Back</button>
+        <span style="font-size:.75rem;color:var(--gray-500)" id="step-indicator">Step 1 of 5</span>
+        <button class="btn-next" id="btn-next" onclick="panelNav(1)"><span id="next-txt">Next</span> ›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACK COMPLAINT -->
+<section id="track" style="background:var(--off-white)">
+  <div class="container">
+    <div class="section-label" id="track-label">Track Status</div>
+    <h2 class="section-title" id="track-title">Track Your Complaint</h2>
+    <p class="section-sub" id="track-sub">Enter your Complaint ID to check the current status.</p>
+    <div style="max-width:500px;display:flex;gap:10px;flex-wrap:wrap">
+      <input type="text" id="track-input" placeholder="e.g. APC-2026-483729" style="flex:1;min-width:200px;padding:12px 16px;border-radius:var(--radius);border:1.5px solid var(--gray-200);font-size:.9rem;outline:none"/>
+      <button onclick="trackComplaint()" style="padding:12px 22px;border-radius:var(--radius);background:var(--orange);color:#fff;font-weight:700;font-size:.88rem;transition:var(--transition)" id="track-btn">🔍 Track</button>
+    </div>
+    <div id="track-result" style="margin-top:16px;display:none"></div>
+  </div>
+</section>
+
+<!-- ADMIN SECTION -->
+<section id="admin">
+  <div class="container">
+    <div class="section-label" id="admin-label">Administration</div>
+    <h2 class="section-title" id="admin-title">Admin Dashboard</h2>
+    <p class="section-sub" id="admin-sub">Restricted access. Enter your admin password to continue.</p>
+
+    <div class="admin-box">
+      <!-- LOCK OVERLAY -->
+      <div class="admin-lock-overlay" id="admin-lock">
+        <span class="admin-lock-icon">🔐</span>
+        <h3>Admin Access Required</h3>
+        <p>This dashboard is restricted to authorised personnel only.<br>Enter the 4-digit admin PIN to unlock.</p>
+        <div class="admin-pin-row">
+          <input type="password" class="admin-pin-input" id="admin-pin-input" maxlength="4" placeholder="••••"
+            onkeydown="if(event.key==='Enter')unlockAdmin()"/>
+          <button class="btn-admin-unlock" onclick="unlockAdmin()">🔓 Unlock</button>
+        </div>
+        <div class="admin-access-denied" id="admin-denied">❌ Access Denied – Incorrect PIN</div>
+      </div>
+
+      <!-- PROTECTED CONTENT -->
+      <div class="admin-content" id="admin-content">
+        <div style="padding:16px 20px;border-bottom:1.5px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <span style="font-weight:700;font-size:.95rem;color:var(--gray-800)">🔓 Admin Dashboard – Adilabad Public Complaint Portal</span>
+          <button class="btn-admin-logout" onclick="lockAdmin()">🔒 Lock Dashboard</button>
+        </div>
+
+        <!-- ANALYTICS -->
+        <div style="padding:16px 20px">
+          <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--orange);margin-bottom:12px">📊 Analytics Overview</div>
+          <div class="analytics-grid" id="analytics-grid">
+            <div class="analytics-card"><div class="analytics-num" id="an-total">0</div><div class="analytics-lbl">Total Complaints</div></div>
+            <div class="analytics-card" style="border-left-color:var(--blue)"><div class="analytics-num" id="an-submitted" style="color:var(--blue)">0</div><div class="analytics-lbl">Submitted</div></div>
+            <div class="analytics-card" style="border-left-color:var(--green)"><div class="analytics-num" id="an-resolved" style="color:var(--green)">0</div><div class="analytics-lbl">Resolved</div></div>
+            <div class="analytics-card" style="border-left-color:#F57F17"><div class="analytics-num" id="an-inprogress" style="color:#F57F17">0</div><div class="analytics-lbl">In Progress</div></div>
+          </div>
+          <!-- Photo gallery -->
+          <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--orange);margin-bottom:10px;margin-top:4px">📷 Submitted Photos</div>
+          <div id="admin-photo-gallery" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;min-height:60px">
+            <div style="color:var(--gray-500);font-size:.82rem;align-self:center" id="no-photos-txt">No photos submitted yet.</div>
+          </div>
+        </div>
+
+        <!-- TOOLBAR + TABLE -->
+        <div class="admin-toolbar">
+          <input type="text" id="admin-search" placeholder="🔍 Search by Complaint ID, Name…" oninput="filterComplaints()"/>
+          <select id="admin-filter-cat" onchange="filterComplaints()">
+            <option value="" id="admin-all-cat">All Categories</option>
+            <option value="Damaged Road">Damaged Road</option>
+            <option value="Potholes">Potholes</option>
+            <option value="Garbage Issues">Garbage Issues</option>
+            <option value="Water Leakage">Water Leakage</option>
+            <option value="Drainage Problems">Drainage Problems</option>
+            <option value="Street Light Issues">Street Light Issues</option>
+            <option value="Public Property Damage">Public Property Damage</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="admin-filter-status" onchange="filterComplaints()">
+            <option value="" id="admin-all-status">All Statuses</option>
+            <option value="Submitted">Submitted</option>
+            <option value="Under Review">Under Review</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+          <button class="btn-search" onclick="downloadReport()" id="download-btn">⬇ Download Report</button>
+        </div>
+        <div class="complaints-table-wrap">
+          <table class="complaints-table" id="complaints-table">
+            <thead>
+              <tr>
+                <th id="th-id">Complaint ID</th>
+                <th id="th-date">Date</th>
+                <th id="th-name">Name</th>
+                <th id="th-cat">Category</th>
+                <th id="th-loc">Location</th>
+                <th id="th-status">Status</th>
+                <th id="th-action">Action</th>
+              </tr>
+            </thead>
+            <tbody id="complaints-tbody">
+              <tr><td colspan="7" class="empty-state"><span class="empty-icon">📋</span><br/><span id="no-complaints-txt">No complaints submitted yet. Be the first!</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <h3 id="footer-title">Adilabad Public Complaint Portal</h3>
+        <p id="footer-desc">Empowering citizens of Adilabad to report and resolve civic issues through technology. Your complaint reaches the right official, every time.</p>
+        <p style="margin-top:10px;font-size:.75rem;color:rgba(255,255,255,.4)" id="footer-addr">Adilabad Municipal Corporation | Adilabad – 504001 | Telangana</p>
+      </div>
+      <div class="footer-col">
+        <h4 id="quick-links-head">Quick Links</h4>
+        <ul>
+          <li><a href="#welcome">🏠 Home</a></li>
+          <li><a href="#complaint">📝 File Complaint</a></li>
+          <li><a href="#track">🔍 Track Complaint</a></li>
+          <li><a href="#admin">⚙️ Admin Panel</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 id="contact-head">Contact</h4>
+        <ul>
+          <li>📧 <a href="mailto:mcaadilabad5885@gmail.com">mcaadilabad5885@gmail.com</a></li>
+          <li>📍 Adilabad, Telangana – 504001</li>
+          <li style="margin-top:10px;font-size:.78rem;color:rgba(255,255,255,.5)" id="dev-note">Website Developed by: <strong style="color:var(--orange-light)">Sricharith</strong></li>
+          <li>📧 <a href="mailto:kommerasripad@gmail.com" style="color:var(--orange-light)">kommerasripad@gmail.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p id="footer-love">Made with <span class="heart">❤️</span> for the People of Adilabad</p>
+      <p id="footer-copy">Copyright © 2026 Adilabad Public Complaint Portal. All Rights Reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- BACK TO TOP -->
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HIDDEN CAMERA INPUT -->
+<input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoUpload(this)"/>
+
+<script>
+/* ===== LANGUAGE DATA ===== */
+const LANG = {
+  en: {
+    site_title:"Adilabad Public Complaint Portal",
+    site_sub:"Adilabad – 504001 | Telangana Government",
+    nav_home:"🏠 Home", nav_how:"📋 How It Works", nav_complaint:"📝 File Complaint",
+    nav_track:"🔍 Track Complaint", nav_admin:"⚙️ Admin Dashboard",
+    welcome_label:"Welcome to the Portal",
+    welcome_title:"Your Voice Matters to Adilabad",
+    welcome_desc:"The Adilabad Public Complaint Portal empowers citizens to report civic issues directly to the Municipal Corporation. Submit complaints with photos, your location and a description — our team acts swiftly.",
+    stat1:"Always Open", stat2:"Categories", stat3:"Fast Response",
+    cat1:"Damaged Roads",cat2:"Potholes",cat3:"Garbage Issues",cat4:"Water Leakage",
+    cat5:"Drainage",cat6:"Street Lights",cat7:"Property Damage",cat8:"Other Issues",
+    how_label:"Simple Process",
+    how_title:"How to File a Complaint",
+    how_sub:"Just three easy steps to register your civic complaint and get it resolved.",
+    step1_head:"📸 Upload Photo",step1_body:"Take a live photo or upload from your gallery. A clear photo helps officials identify and act on the issue faster.",
+    step2_head:"📍 Share Location",step2_body:"Allow GPS for automatic location detection, or enter your address manually. Accurate location ensures faster resolution.",
+    step3_head:"📝 Describe & Submit",step3_body:"Fill in your details, describe the problem, let AI generate a professional complaint letter, and submit.",
+    form_label:"File a Complaint",form_title:"Submit Your Complaint",
+    form_sub:'All fields marked <span style="color:var(--red)">*</span> are required.',
+    pl1:"Photo",pl2:"Location",pl3:"Details",pl4:"AI Letter",pl5:"Submit",
+    p1_head:"📸 Step 1: Upload Photo",p1_sub:"A photo is required. Take a live picture or upload from gallery.",
+    upload_head:"Tap to Add Photo",upload_sub:"Accepted: JPG, PNG, WEBP (max 10 MB)",
+    p2_head:"📍 Step 2: Your Location",p2_sub:"Allow GPS for auto-detection, or enter your address manually.",
+    detect_btn:"Detect My Location",gps_label:"GPS Coordinates",auto_addr_label:"Detected Address",
+    divider_or:"— OR ENTER MANUALLY —",
+    house_lbl:"House / Flat No.",street_lbl:"Street Name",landmark_lbl:"Landmark",
+    area_lbl:"Area / Colony",city_lbl:"City",pin_lbl:"Pincode",
+    p3_head:"📝 Step 3: Complaint Details",p3_sub:"Please fill in all required fields accurately.",
+    fn_lbl:"Full Name",mob_lbl:"Mobile Number",email_lbl:"Email Address",ward_lbl:"Ward Number (Optional)",
+    cat_lbl:"Problem Category",cat_placeholder:"-- Select Category --",
+    opt1:"🛣️ Damaged Road",opt2:"🕳️ Potholes",opt3:"🗑️ Garbage Issues",
+    opt4:"💧 Water Leakage",opt5:"🚿 Drainage Problems",opt6:"💡 Street Light Issues",
+    opt7:"🏚️ Public Property Damage",opt8:"📌 Other Civic Issues",
+    desc_lbl:"Problem Description",desc_hint:"Minimum 20 characters",
+    since_lbl:"Issue Since",severity_lbl:"Severity",
+    voice_head:"Voice Complaint (Optional)",rec_label:"Recording…",voice_upload_lbl:"Or Upload Audio File",
+    p4_head:"🤖 Step 4: AI Complaint Letter",p4_sub:"Our AI will generate a professional complaint letter based on your details.",
+    ai_head:"Smart Complaint Generator",
+    ai_sub:"Click below to generate a professional letter addressed to the Municipal Commissioner.",
+    gen_btn:"Generate Complaint Letter",ai_loading_txt:"Generating your letter…",
+    p5_head:"✅ Step 5: Review & Submit",p5_sub:"Review your complaint details before submitting.",
+    submit_note_head:"Submission Note:",
+    submit_note:"Your complaint with all attachments will be sent to the Municipal Corporation, Adilabad via email. A unique Complaint ID will be generated for tracking.",
+    success_head:"Complaint Submitted!",success_sub:"Your complaint has been received. Save your Complaint ID for tracking.",
+    cid_label:"Your Complaint ID",copy_btn:"📋 Copy ID",
+    email_sent_note:"Confirmation email sent to the Municipal Corporation, Adilabad.",
+    new_complaint_btn:"+ File Another Complaint",
+    next_txt:"Next",track_label:"Track Status",track_title:"Track Your Complaint",
+    track_sub:"Enter your Complaint ID to check the current status.",track_btn:"🔍 Track",
+    admin_label:"Administration",admin_title:"Admin Dashboard",
+    admin_sub:"View, search, filter and manage all submitted complaints.",
+    admin_all_cat:"All Categories",admin_all_status:"All Statuses",download_btn:"⬇ Download Report",
+    th_id:"Complaint ID",th_date:"Date",th_name:"Name",th_cat:"Category",th_loc:"Location",th_status:"Status",th_action:"Action",
+    no_complaints_txt:"No complaints submitted yet. Be the first!",
+    footer_title:"Adilabad Public Complaint Portal",
+    footer_desc:"Empowering citizens of Adilabad to report and resolve civic issues through technology. Your complaint reaches the right official, every time.",
+    footer_addr:"Adilabad Municipal Corporation | Adilabad – 504001 | Telangana",
+    quick_links_head:"Quick Links",contact_head:"Contact",dev_note:"Website Developed by:",
+    footer_love:"Made with ❤️ for the People of Adilabad",
+    footer_copy:"Copyright © 2026 Adilabad Public Complaint Portal. All Rights Reserved.",
+    voice_head_full:"🎙️ Voice Complaint (Optional)",
+  },
+  te: {
+    site_title:"ఆదిలాబాద్ పబ్లిక్ కంప్లైంట్ పోర్టల్",
+    site_sub:"ఆదిలాబాద్ – 504001 | తెలంగాణ ప్రభుత్వం",
+    nav_home:"🏠 హోమ్",nav_how:"📋 ఎలా చేయాలి",nav_complaint:"📝 ఫిర్యాదు నమోదు",
+    nav_track:"🔍 స్థితి తనిఖీ",nav_admin:"⚙️ అడ్మిన్",
+    welcome_label:"పోర్టల్‌కు స్వాగతం",
+    welcome_title:"మీ గొంతు ఆదిలాబాద్‌కు ముఖ్యం",
+    welcome_desc:"ఆదిలాబాద్ పబ్లిక్ కంప్లైంట్ పోర్టల్ ద్వారా పౌరులు నేరుగా మునిసిపల్ కార్పొరేషన్‌కు సమస్యలు తెలియజేయవచ్చు.",
+    stat1:"సర్వదా తెరుచుకుని",stat2:"విభాగాలు",stat3:"త్వరిత స్పందన",
+    cat1:"దెబ్బతిన్న రోడ్లు",cat2:"గుంటలు",cat3:"చెత్త సమస్యలు",cat4:"నీటి లీకేజ్",
+    cat5:"మురుగు నీటి సమస్య",cat6:"వీధి దీపాలు",cat7:"ఆస్తి నష్టం",cat8:"ఇతర సమస్యలు",
+    how_label:"సులభ ప్రక్రియ",how_title:"ఫిర్యాదు ఎలా నమోదు చేయాలి",
+    how_sub:"మీ పౌర సమస్యను నమోదు చేయడానికి మూడు సులభ దశలు.",
+    step1_head:"📸 ఫోటో అప్‌లోడ్",step1_body:"లైవ్ ఫోటో తీయండి లేదా గ్యాలరీ నుండి అప్‌లోడ్ చేయండి.",
+    step2_head:"📍 స్థానం పంచుకోండి",step2_body:"GPS అనుమతించండి లేదా మీ చిరునామాను మాన్యువల్‌గా నమోదు చేయండి.",
+    step3_head:"📝 వివరించండి & సమర్పించండి",step3_body:"వివరాలు నమోదు చేయండి, AI లెటర్ రూపొందించండి, సమర్పించండి.",
+    form_label:"ఫిర్యాదు నమోదు",form_title:"మీ ఫిర్యాదు సమర్పించండి",
+    form_sub:'<span style="color:var(--red)">*</span> గుర్తు పెట్టిన అన్ని అంశాలు తప్పనిసరి.',
+    pl1:"ఫోటో",pl2:"స్థానం",pl3:"వివరాలు",pl4:"AI లెటర్",pl5:"సమర్పణ",
+    p1_head:"📸 దశ 1: ఫోటో అప్‌లోడ్",p1_sub:"ఫోటో తప్పనిసరి. లైవ్ ఫోటో తీయండి లేదా గ్యాలరీ నుండి అప్‌లోడ్ చేయండి.",
+    upload_head:"ఫోటో జోడించడానికి క్లిక్ చేయండి",upload_sub:"స్వీకరించబడేవి: JPG, PNG, WEBP (గరిష్ఠం 10 MB)",
+    p2_head:"📍 దశ 2: మీ స్థానం",p2_sub:"GPS స్వయంచాలకంగా గుర్తిస్తుంది, లేదా మాన్యువల్‌గా నమోదు చేయండి.",
+    detect_btn:"నా స్థానాన్ని గుర్తించండి",gps_label:"GPS అన్వయాలు",auto_addr_label:"గుర్తించిన చిరునామా",
+    divider_or:"— లేదా మాన్యువల్‌గా నమోదు చేయండి —",
+    house_lbl:"ఇల్లు / ఫ్లాట్ నెం.",street_lbl:"వీధి పేరు",landmark_lbl:"ల్యాండ్‌మార్క్",
+    area_lbl:"ప్రాంతం / కాలనీ",city_lbl:"నగరం",pin_lbl:"పిన్‌కోడ్",
+    p3_head:"📝 దశ 3: ఫిర్యాదు వివరాలు",p3_sub:"అన్ని అవసరమైన వివరాలు నమోదు చేయండి.",
+    fn_lbl:"పూర్తి పేరు",mob_lbl:"మొబైల్ నంబర్",email_lbl:"ఇమెయిల్ చిరునామా",ward_lbl:"వార్డు నంబర్ (ఐచ్ఛికం)",
+    cat_lbl:"సమస్య విభాగం",cat_placeholder:"-- విభాగం ఎంచుకోండి --",
+    opt1:"🛣️ దెబ్బతిన్న రోడ్",opt2:"🕳️ గుంటలు",opt3:"🗑️ చెత్త సమస్యలు",
+    opt4:"💧 నీటి లీకేజ్",opt5:"🚿 మురుగు నీటి సమస్య",opt6:"💡 వీధి దీప సమస్య",
+    opt7:"🏚️ ప్రజా ఆస్తి నష్టం",opt8:"📌 ఇతర పౌర సమస్యలు",
+    desc_lbl:"సమస్య వివరణ",desc_hint:"కనీసం 20 అక్షరాలు",
+    since_lbl:"సమస్య ఎప్పటి నుండి",severity_lbl:"తీవ్రత",
+    voice_head:"వాయిస్ ఫిర్యాదు (ఐచ్ఛికం)",rec_label:"రికార్డింగ్…",voice_upload_lbl:"లేదా ఆడియో ఫైల్ అప్‌లోడ్ చేయండి",
+    p4_head:"🤖 దశ 4: AI ఫిర్యాదు లెటర్",p4_sub:"AI స్వయంచాలకంగా ప్రొఫెషనల్ లెటర్ రూపొందిస్తుంది.",
+    ai_head:"స్మార్ట్ కంప్లైంట్ జెనరేటర్",ai_sub:"ముఖ్య అధికారికి ప్రొఫెషనల్ లెటర్ రూపొందించడానికి క్లిక్ చేయండి.",
+    gen_btn:"ఫిర్యాదు లెటర్ రూపొందించండి",ai_loading_txt:"మీ లెటర్ రూపొందిస్తున్నాం…",
+    p5_head:"✅ దశ 5: సమీక్ష & సమర్పణ",p5_sub:"సమర్పించే ముందు మీ వివరాలు సమీక్షించండి.",
+    submit_note_head:"సమర్పణ గమనిక:",
+    submit_note:"మీ ఫిర్యాదు ఇమెయిల్ ద్వారా ముఖ్య అధికారికి పంపబడుతుంది. ట్రాకింగ్ కోసం ఫిర్యాదు ID రూపొందించబడుతుంది.",
+    success_head:"ఫిర్యాదు సమర్పించబడింది!",success_sub:"మీ ఫిర్యాదు స్వీకరించబడింది. ట్రాకింగ్ కోసం ఫిర్యాదు ID సేవ్ చేయండి.",
+    cid_label:"మీ ఫిర్యాదు ID",copy_btn:"📋 ID కాపీ చేయండి",
+    email_sent_note:"నిర్ధారణ ఇమెయిల్ మునిసిపల్ కార్పొరేషన్‌కు పంపబడింది.",
+    new_complaint_btn:"+ మరొక ఫిర్యాదు నమోదు చేయండి",
+    next_txt:"తదుపరి",track_label:"స్థితి తనిఖీ",track_title:"మీ ఫిర్యాదు ట్రాక్ చేయండి",
+    track_sub:"ప్రస్తుత స్థితి తనిఖీ చేయడానికి ఫిర్యాదు ID నమోదు చేయండి.",track_btn:"🔍 ట్రాక్",
+    admin_label:"నిర్వహణ",admin_title:"అడ్మిన్ డాష్‌బోర్డ్",
+    admin_sub:"అన్ని సమర్పించిన ఫిర్యాదులను వీక్షించండి, శోధించండి, ఫిల్టర్ చేయండి.",
+    admin_all_cat:"అన్ని విభాగాలు",admin_all_status:"అన్ని స్థితులు",download_btn:"⬇ నివేదిక డౌన్‌లోడ్",
+    th_id:"ఫిర్యాదు ID",th_date:"తేదీ",th_name:"పేరు",th_cat:"విభాగం",th_loc:"స్థానం",th_status:"స్థితి",th_action:"చర్య",
+    no_complaints_txt:"ఇంకా ఫిర్యాదులు ఏవీ సమర్పించబడలేదు.",
+    footer_title:"ఆదిలాబాద్ పబ్లిక్ కంప్లైంట్ పోర్టల్",
+    footer_desc:"సాంకేతిక సహాయంతో ఆదిలాబాద్ పౌరులను సక్రమపరచడం.",
+    footer_addr:"ఆదిలాబాద్ మునిసిపల్ కార్పొరేషన్ | ఆదిలాబాద్ – 504001 | తెలంగాణ",
+    quick_links_head:"త్వరిత లింకులు",contact_head:"సంప్రదింపు",dev_note:"వెబ్‌సైట్ అభివృద్ధి చేసినవారు:",
+    footer_love:"ఆదిలాబాద్ ప్రజల కోసం ❤️ తో తయారు చేయబడింది",
+    footer_copy:"కాపీరైట్ © 2026 ఆదిలాబాద్ పబ్లిక్ కంప్లైంట్ పోర్టల్. అన్ని హక్కులు రక్షించబడ్డాయి.",
+  },
+  hi: {
+    site_title:"आदिलाबाद सार्वजनिक शिकायत पोर्टल",
+    site_sub:"आदिलाबाद – 504001 | तेलंगाना सरकार",
+    nav_home:"🏠 होम",nav_how:"📋 कैसे करें",nav_complaint:"📝 शिकायत दर्ज करें",
+    nav_track:"🔍 स्थिति देखें",nav_admin:"⚙️ एडमिन",
+    welcome_label:"पोर्टल में आपका स्वागत है",
+    welcome_title:"आपकी आवाज़ आदिलाबाद के लिए मायने रखती है",
+    welcome_desc:"आदिलाबाद सार्वजनिक शिकायत पोर्टल नागरिकों को सीधे नगर निगम तक अपनी समस्याएं पहुंचाने में सक्षम बनाता है।",
+    stat1:"हमेशा उपलब्ध",stat2:"श्रेणियां",stat3:"त्वरित प्रतिक्रिया",
+    cat1:"क्षतिग्रस्त सड़कें",cat2:"गड्ढे",cat3:"कचरा समस्याएं",cat4:"पानी की लीकेज",
+    cat5:"जल निकासी",cat6:"स्ट्रीट लाइट",cat7:"सार्वजनिक संपत्ति",cat8:"अन्य समस्याएं",
+    how_label:"सरल प्रक्रिया",how_title:"शिकायत कैसे दर्ज करें",
+    how_sub:"आपकी नागरिक शिकायत दर्ज करने और हल करने के लिए तीन आसान चरण।",
+    step1_head:"📸 फ़ोटो अपलोड करें",step1_body:"लाइव फ़ोटो लें या गैलरी से अपलोड करें। स्पष्ट फ़ोटो से अधिकारी तेज़ी से कार्रवाई कर सकते हैं।",
+    step2_head:"📍 स्थान साझा करें",step2_body:"GPS की अनुमति दें या पते को मैन्युअली दर्ज करें।",
+    step3_head:"📝 विवरण दें और जमा करें",step3_body:"विवरण भरें, AI से शिकायत पत्र बनाएं, और जमा करें।",
+    form_label:"शिकायत दर्ज करें",form_title:"अपनी शिकायत जमा करें",
+    form_sub:'<span style="color:var(--red)">*</span> चिह्नित सभी फ़ील्ड आवश्यक हैं।',
+    pl1:"फ़ोटो",pl2:"स्थान",pl3:"विवरण",pl4:"AI पत्र",pl5:"जमा करें",
+    p1_head:"📸 चरण 1: फ़ोटो अपलोड करें",p1_sub:"फ़ोटो अनिवार्य है। लाइव फ़ोटो लें या गैलरी से अपलोड करें।",
+    upload_head:"फ़ोटो जोड़ने के लिए क्लिक करें",upload_sub:"स्वीकृत: JPG, PNG, WEBP (अधिकतम 10 MB)",
+    p2_head:"📍 चरण 2: आपका स्थान",p2_sub:"GPS स्वत: पहचान, या पता मैन्युअली दर्ज करें।",
+    detect_btn:"मेरा स्थान पहचानें",gps_label:"GPS निर्देशांक",auto_addr_label:"पहचाना गया पता",
+    divider_or:"— या मैन्युअली दर्ज करें —",
+    house_lbl:"मकान / फ्लैट नं.",street_lbl:"गली का नाम",landmark_lbl:"लैंडमार्क",
+    area_lbl:"क्षेत्र / कॉलोनी",city_lbl:"शहर",pin_lbl:"पिनकोड",
+    p3_head:"📝 चरण 3: शिकायत विवरण",p3_sub:"सभी आवश्यक फ़ील्ड सटीक रूप से भरें।",
+    fn_lbl:"पूरा नाम",mob_lbl:"मोबाइल नंबर",email_lbl:"ईमेल पता",ward_lbl:"वार्ड नंबर (वैकल्पिक)",
+    cat_lbl:"समस्या श्रेणी",cat_placeholder:"-- श्रेणी चुनें --",
+    opt1:"🛣️ क्षतिग्रस्त सड़क",opt2:"🕳️ गड्ढे",opt3:"🗑️ कचरा समस्याएं",
+    opt4:"💧 पानी की लीकेज",opt5:"🚿 जल निकासी समस्या",opt6:"💡 स्ट्रीट लाइट समस्या",
+    opt7:"🏚️ सार्वजनिक संपत्ति क्षति",opt8:"📌 अन्य नागरिक समस्याएं",
+    desc_lbl:"समस्या विवरण",desc_hint:"न्यूनतम 20 अक्षर",
+    since_lbl:"समस्या कब से है",severity_lbl:"गंभीरता",
+    voice_head:"वॉइस शिकायत (वैकल्पिक)",rec_label:"रिकॉर्डिंग हो रही है…",voice_upload_lbl:"या ऑडियो फ़ाइल अपलोड करें",
+    p4_head:"🤖 चरण 4: AI शिकायत पत्र",p4_sub:"AI आपके विवरण के आधार पर पेशेवर शिकायत पत्र बनाएगा।",
+    ai_head:"स्मार्ट शिकायत जेनरेटर",ai_sub:"नगर आयुक्त को पेशेवर पत्र बनाने के लिए क्लिक करें।",
+    gen_btn:"शिकायत पत्र बनाएं",ai_loading_txt:"आपका पत्र बनाया जा रहा है…",
+    p5_head:"✅ चरण 5: समीक्षा और जमा करें",p5_sub:"जमा करने से पहले अपनी शिकायत विवरण की समीक्षा करें।",
+    submit_note_head:"जमा करने की जानकारी:",
+    submit_note:"आपकी शिकायत सभी अटैचमेंट के साथ ईमेल द्वारा नगर निगम को भेजी जाएगी।",
+    success_head:"शिकायत जमा हो गई!",success_sub:"आपकी शिकायत प्राप्त हुई। ट्रैकिंग के लिए शिकायत ID सेव करें।",
+    cid_label:"आपकी शिकायत ID",copy_btn:"📋 ID कॉपी करें",
+    email_sent_note:"पुष्टिकरण ईमेल नगर निगम को भेजा गया।",
+    new_complaint_btn:"+ नई शिकायत दर्ज करें",
+    next_txt:"अगला",track_label:"स्थिति ट्रैक करें",track_title:"अपनी शिकायत ट्रैक करें",
+    track_sub:"वर्तमान स्थिति जानने के लिए शिकायत ID दर्ज करें।",track_btn:"🔍 ट्रैक",
+    admin_label:"प्रशासन",admin_title:"एडमिन डैशबोर्ड",
+    admin_sub:"सभी जमा की गई शिकायतें देखें, खोजें और फ़िल्टर करें।",
+    admin_all_cat:"सभी श्रेणियां",admin_all_status:"सभी स्थितियां",download_btn:"⬇ रिपोर्ट डाउनलोड",
+    th_id:"शिकायत ID",th_date:"तारीख",th_name:"नाम",th_cat:"श्रेणी",th_loc:"स्थान",th_status:"स्थिति",th_action:"कार्रवाई",
+    no_complaints_txt:"अभी तक कोई शिकायत जमा नहीं की गई।",
+    footer_title:"आदिलाबाद सार्वजनिक शिकायत पोर्टल",
+    footer_desc:"तकनीक के माध्यम से आदिलाबाद के नागरिकों को नागरिक समस्याएं रिपोर्ट करने में सशक्त बनाना।",
+    footer_addr:"आदिलाबाद नगर निगम | आदिलाबाद – 504001 | तेलंगाना",
+    quick_links_head:"त्वरित लिंक",contact_head:"संपर्क",dev_note:"वेबसाइट विकसित किया:",
+    footer_love:"आदिलाबाद के लोगों के लिए ❤️ के साथ बनाया गया",
+    footer_copy:"कॉपीराइट © 2026 आदिलाबाद सार्वजनिक शिकायत पोर्टल। सर्वाधिकार सुरक्षित।",
+  }
+};
+let currentLang = 'en';
+
+function setLang(lang){
+  currentLang = lang;
+  const data = LANG[lang];
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+  // Apply all translations
+  for(const [key,val] of Object.entries(data)){
+    const el = document.getElementById(key.replace(/_/g,'-'));
+    if(el){ if(el.innerHTML!==undefined) el.innerHTML=val; }
+    // Also try with underscores converted to dashes
+    const el2 = document.getElementById(key);
+    if(el2){ el2.innerHTML=val; }
+  }
+  // Marquee special
+  const mt = lang==='te'?'📢 ఆదిలాబాద్ 504001 పబ్లిక్ కంప్లైంట్ పోర్టల్ – పౌర సమస్యలు నివేదించండి | దెబ్బతిన్న రోడ్లు • గుంటలు • చెత్త • నీటి లీకేజ్ • మురుగు నీరు • వీధి దీపాలు':
+      lang==='hi'?'📢 आदिलाबाद 504001 सार्वजनिक शिकायत पोर्टल – नागरिक समस्याएं रिपोर्ट करें | क्षतिग्रस्त सड़कें • गड्ढे • कचरा • पानी की लीकेज • जल निकासी • स्ट्रीट लाइट':
+      '📢 Adilabad 504001 Public Complaint Portal – Report Civic Issues | Damaged Roads • Potholes • Garbage • Water Leakage • Drainage • Street Lights • Public Property Damage';
+  document.getElementById('marquee-text').textContent=mt;
+  document.getElementById('marquee-text2').textContent=mt;
+  // Update nav links
+  const navMap = {nav_home:'nav_home',nav_how:'nav_how',nav_complaint:'nav_complaint',nav_track:'nav_track',nav_admin:'nav_admin'};
+  document.querySelectorAll('.nav-link').forEach(a=>{
+    const key = a.dataset.key;
+    if(key && data[key]) a.textContent=data[key];
+  });
+  document.documentElement.lang = lang==='te'?'te':lang==='hi'?'hi':'en';
+}
+
+/* ===== CAROUSEL ===== */
+let carouselIdx = 0;
+const carouselCount = 4;
+const track = document.getElementById('carousel-track');
+const dotsEl = document.getElementById('carousel-dots');
+
+(function initCarousel(){
+  for(let i=0;i<carouselCount;i++){
+    const dot=document.createElement('div');
+    dot.className='carousel-dot'+(i===0?' active':'');
+    dot.onclick=()=>carouselGo(i);
+    dotsEl.appendChild(dot);
+  }
+  setInterval(()=>carouselMove(1),5000);
+})();
+
+function carouselMove(dir){
+  carouselIdx=(carouselIdx+dir+carouselCount)%carouselCount;
+  carouselRender();
+}
+function carouselGo(i){carouselIdx=i;carouselRender();}
+function carouselRender(){
+  track.style.transform=`translateX(-${carouselIdx*100}%)`;
+  document.querySelectorAll('.carousel-dot').forEach((d,i)=>d.classList.toggle('active',i===carouselIdx));
+}
+
+/* ===== NAV TOGGLE ===== */
+function toggleNav(){
+  const nav=document.getElementById('main-nav');
+  nav.classList.toggle('open');
+}
+// Close nav on link click on mobile
+document.querySelectorAll('.nav-link').forEach(a=>a.addEventListener('click',()=>{
+  if(window.innerWidth<768) document.getElementById('main-nav').classList.remove('open');
+}));
+
+/* ===== BACK TO TOP ===== */
+window.addEventListener('scroll',()=>{
+  document.getElementById('back-top').classList.toggle('show',window.scrollY>300);
+  // Active nav link
+  const sections=['welcome','how-it-works','complaint','track','admin'];
+  let active='';
+  sections.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&window.scrollY>=el.offsetTop-80) active=id;
+  });
+  document.querySelectorAll('.nav-link').forEach(a=>{
+    const href=a.getAttribute('href').replace('#','');
+    a.classList.toggle('active',href===active);
+  });
+});
+
+/* ===== TOAST ===== */
+function showToast(msg,dur=2800){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+/* ===== FORM STATE ===== */
+let currentPanel=1;
+let photoFile=null, photoDataUrl=null;
+let mediaRecorder=null, audioChunks=[], voiceBlob=null;
+let gpsLat=null, gpsLng=null;
+let generatedLetter='';
+let complaints=JSON.parse(localStorage.getItem('adilabad_complaints')||'[]');
+
+/* ===== PROGRESS ===== */
+function setProgress(panel){
+  for(let i=1;i<=5;i++){
+    const s=document.getElementById('ps'+i);
+    s.classList.remove('active','done');
+    if(i<panel) s.classList.add('done');
+    else if(i===panel) s.classList.add('active');
+  }
+  document.getElementById('step-indicator').textContent=`Step ${panel} of 5`;
+  const isLast=panel===5;
+  const btnNext=document.getElementById('btn-next');
+  btnNext.innerHTML=isLast?`<span id="submit-txt">✓ Submit Complaint</span>`:`<span id="next-txt">${LANG[currentLang].next_txt||'Next'}</span> ›`;
+  if(isLast){btnNext.className='btn-submit';btnNext.onclick=submitComplaint;}
+  else{btnNext.className='btn-next';btnNext.onclick=()=>panelNav(1);}
+  document.getElementById('btn-prev').style.visibility=panel>1?'visible':'hidden';
+}
+
+function showPanel(n){
+  document.querySelectorAll('.form-panel').forEach(p=>p.classList.remove('active'));
+  const p=document.getElementById('panel'+n);
+  if(p) p.classList.add('active');
+  currentPanel=n;
+  setProgress(n);
+  if(n===5) buildReview();
+}
+
+function panelNav(dir){
+  const next=currentPanel+dir;
+  if(dir===1){
+    if(!validatePanel(currentPanel)) return;
+  }
+  if(next>=1&&next<=5) showPanel(next);
+}
+
+/* ===== VALIDATION ===== */
+function validatePanel(p){
+  if(p===1){
+    if(!photoFile){
+      document.getElementById('photo-err').style.display='block';
+      return false;
+    }
+    document.getElementById('photo-err').style.display='none';
+    return true;
+  }
+  if(p===2) return true; // location is flexible
+  if(p===3){
+    let ok=true;
+    const checks=[
+      {id:'f-name',field:'fn-field',msg:'Name is required.',test:v=>v.trim().length>0},
+      {id:'f-mobile',field:'mob-field',msg:'Enter valid number.',test:v=>/^(\+91)?[6-9]\d{9}$/.test(v.replace(/\s/g,''))},
+      {id:'f-email',field:'email-field',msg:'Enter valid email.',test:v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)},
+      {id:'f-category',field:'cat-field',msg:'Select a category.',test:v=>v!==''},
+      {id:'f-desc',field:'desc-field',msg:'Min 20 chars.',test:v=>v.trim().length>=20},
+    ];
+    checks.forEach(c=>{
+      const el=document.getElementById(c.id);
+      const fld=document.getElementById(c.field);
+      const valid=c.test(el.value);
+      fld.classList.toggle('has-error',!valid);
+      el.classList.toggle('error',!valid);
+      if(!valid) ok=false;
+    });
+    if(!ok) showToast('⚠️ Please fix the errors below.');
+    return ok;
+  }
+  if(p===4) return true;
+  return true;
+}
+
+/* ===== PHOTO ===== */
+function openCamera(){
+  document.getElementById('camera-input').click();
+}
+function handlePhotoUpload(input){
+  const file=input.files[0];
+  if(!file) return;
+  if(file.size>10*1024*1024){showToast('⚠️ File too large. Max 10MB.');return;}
+  photoFile=file;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    photoDataUrl=e.target.result;
+    const prev=document.getElementById('photo-preview');
+    prev.src=photoDataUrl;prev.style.display='block';
+    document.getElementById('photo-drop').classList.add('has-photo');
+    document.querySelector('.upload-icon').textContent='✅';
+    document.getElementById('upload-head').textContent='Photo Added!';
+    document.getElementById('photo-err').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ===== LOCATION ===== */
+function detectLocation(){
+  const btn=document.getElementById('detect-btn-txt');
+  const status=document.getElementById('loc-status');
+  btn.textContent='Detecting…';
+  if(!navigator.geolocation){
+    showLocError('Geolocation not supported by your browser.');
+    btn.textContent=LANG[currentLang].detect_btn||'Detect My Location';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      gpsLat=pos.coords.latitude.toFixed(6);
+      gpsLng=pos.coords.longitude.toFixed(6);
+      document.getElementById('gps-coords').value=`${gpsLat}, ${gpsLng}`;
+      // Reverse geocode using OpenStreetMap Nominatim
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${gpsLat}&lon=${gpsLng}&format=json`)
+        .then(r=>r.json())
+        .then(data=>{
+          const addr=data.display_name||`${gpsLat}, ${gpsLng}`;
+          document.getElementById('auto-address').value=addr;
+          // Pre-fill manual fields too
+          const a=data.address||{};
+          if(a.road) document.getElementById('f-street').value=a.road;
+          if(a.suburb||a.neighbourhood) document.getElementById('f-area').value=a.suburb||a.neighbourhood;
+          if(a.city||a.town||a.village) document.getElementById('f-city').value=a.city||a.town||a.village;
+          if(a.postcode) document.getElementById('f-pin').value=a.postcode;
+        })
+        .catch(()=>{
+          document.getElementById('auto-address').value=`Lat: ${gpsLat}, Lng: ${gpsLng}`;
+        });
+      status.className='loc-status success';
+      status.innerHTML='✅ Location detected successfully!';
+      btn.textContent='✅ Location Detected';
+    },
+    err=>{
+      showLocError('Permission denied. Please enter address manually.');
+      document.getElementById('manual-loc').classList.add('show');
+      btn.textContent=LANG[currentLang].detect_btn||'Detect My Location';
+    },
+    {timeout:10000}
+  );
+}
+function showLocError(msg){
+  const s=document.getElementById('loc-status');
+  s.className='loc-status error';
+  s.innerHTML='❌ '+msg;
+}
+
+/* ===== VOICE RECORDING ===== */
+async function startRecording(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRecorder=new MediaRecorder(stream);
+    audioChunks=[];
+    mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
+    mediaRecorder.onstop=()=>{
+      voiceBlob=new Blob(audioChunks,{type:'audio/webm'});
+      const url=URL.createObjectURL(voiceBlob);
+      const pb=document.getElementById('voice-playback');
+      pb.src=url;pb.style.display='block';
+      stream.getTracks().forEach(t=>t.stop());
+    };
+    mediaRecorder.start();
+    document.getElementById('btn-record').style.display='none';
+    document.getElementById('btn-stop').style.display='inline-flex';
+    document.getElementById('recording-indicator').style.display='flex';
+  }catch(e){showToast('⚠️ Microphone access denied.');}
+}
+function stopRecording(){
+  if(mediaRecorder&&mediaRecorder.state!=='inactive') mediaRecorder.stop();
+  document.getElementById('btn-record').style.display='inline-flex';
+  document.getElementById('btn-stop').style.display='none';
+  document.getElementById('recording-indicator').style.display='none';
+}
+
+/* ===== AI LETTER GENERATION ===== */
+async function generateLetter(){
+  const name=document.getElementById('f-name').value||'Citizen';
+  const category=document.getElementById('f-category').value||'Civic Issue';
+  const since=document.getElementById('f-since').value||'some time';
+  const desc=document.getElementById('f-desc').value||'The issue needs immediate attention.';
+  const area=document.getElementById('f-area').value||document.getElementById('f-street').value||'the reported location';
+  const ward=document.getElementById('f-ward').value;
+  const autoAddr=document.getElementById('auto-address').value;
+  const location=autoAddr||[area, document.getElementById('f-city').value].filter(Boolean).join(', ')||'Adilabad';
+
+  const btn=document.getElementById('btn-generate');
+  const loading=document.getElementById('ai-loading');
+  const output=document.getElementById('ai-output');
+  btn.disabled=true;
+  loading.style.display='block';
+  output.classList.remove('visible');
+
+  try{
+    const prompt=`Generate a formal civic complaint letter to the Municipal Commissioner of Adilabad for the following:
+Citizen Name: ${name}
+Category: ${category}
+Location: ${location}${ward?' (Ward '+ward+')':''}
+Issue Since: ${since}
+Description: ${desc}
+
+Write a professional, respectful letter of about 150-200 words. Include:
+- Subject line
+- Formal greeting
+- Description of the problem
+- Reference to attached photo
+- Request for prompt action
+- The GPS/location details
+- Polite closing
+Format it clearly with "Subject:" on first line, then the letter body.`;
+
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await res.json();
+    generatedLetter=data.content?.map(c=>c.text||'').join('')||'';
+    output.textContent=generatedLetter;
+    output.classList.add('visible');
+    document.getElementById('ai-action-btns').style.display='flex';
+    showToast('✅ Letter generated!');
+  }catch(e){
+    generatedLetter=generateLetterFallback(name,category,location,since,desc,ward);
+    output.textContent=generatedLetter;
+    output.classList.add('visible');
+    document.getElementById('ai-action-btns').style.display='flex';
+  }finally{
+    btn.disabled=false;
+    loading.style.display='none';
+  }
+}
+
+function generateLetterFallback(name,cat,loc,since,desc,ward){
+  const id=generateComplaintId();
+  return `Subject: ${cat} Complaint – ${loc}
+
+Dear Municipal Commissioner,
+
+I am writing to bring to your urgent attention the deplorable condition of the ${cat.toLowerCase()} at ${loc}${ward?' (Ward '+ward+')':''}, Adilabad – 504001.
+
+The issue has persisted for approximately ${since} and has caused significant inconvenience and safety concerns for the residents and commuters of the area.
+
+${desc}
+
+The attached photograph clearly documents the extent of the damage. I respectfully urge the Municipal Corporation to conduct an immediate inspection and undertake necessary repairs at the earliest.
+
+Location: ${loc}, Adilabad – 504001${ward?'\nWard: '+ward:''}
+Issue Duration: ${since}
+Category: ${cat}
+
+I trust that your office will take prompt and appropriate action to resolve this issue and restore the quality of civic infrastructure for the benefit of all citizens.
+
+Kindly acknowledge receipt of this complaint and provide an expected timeline for resolution.
+
+Thanking you,
+
+Yours sincerely,
+${name}
+Adilabad – 504001`;
+}
+
+/* ===== COMPLAINT ID ===== */
+function generateComplaintId(){
+  const num=Math.floor(100000+Math.random()*900000);
+  return `APC-2026-${num}`;
+}
+
+/* ===== REVIEW ===== */
+function buildReview(){
+  const box=document.getElementById('review-box');
+  const addr=document.getElementById('auto-address').value||
+    [document.getElementById('f-house').value,
+     document.getElementById('f-street').value,
+     document.getElementById('f-landmark').value,
+     document.getElementById('f-area').value,
+     document.getElementById('f-city').value,
+     document.getElementById('f-pin').value].filter(Boolean).join(', ');
+  box.innerHTML=`
+    <div style="display:grid;gap:6px">
+      <div><strong>Name:</strong> ${esc(document.getElementById('f-name').value)}</div>
+      <div><strong>Mobile:</strong> ${esc(document.getElementById('f-mobile').value)}</div>
+      <div><strong>Email:</strong> ${esc(document.getElementById('f-email').value)}</div>
+      <div><strong>Category:</strong> ${esc(document.getElementById('f-category').value)}</div>
+      <div><strong>Issue Since:</strong> ${esc(document.getElementById('f-since').value)}</div>
+      <div><strong>Severity:</strong> ${esc(document.getElementById('f-severity').value)}</div>
+      ${document.getElementById('f-ward').value?`<div><strong>Ward:</strong> ${esc(document.getElementById('f-ward').value)}</div>`:''}
+      <div><strong>Address:</strong> ${esc(addr)}</div>
+      ${gpsLat?`<div><strong>GPS:</strong> ${gpsLat}, ${gpsLng}</div>`:''}
+      <div><strong>Description:</strong> ${esc(document.getElementById('f-desc').value)}</div>
+      <div><strong>Photo:</strong> ${photoFile?'✅ '+esc(photoFile.name):'❌ Not uploaded'}</div>
+      <div><strong>Voice:</strong> ${voiceBlob||document.getElementById('f-voice-file').files[0]?'✅ Attached':'–'}</div>
+      <div><strong>AI Letter:</strong> ${generatedLetter?'✅ Generated':'⚠️ Not generated (recommended)'}</div>
+    </div>`;
+}
+function esc(s){return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ===== SUBMIT ===== */
+async function submitComplaint(){
+  if(!validatePanel(3)) { showPanel(3); return; }
+  const complaintId=generateComplaintId();
+  const addr=document.getElementById('auto-address').value||
+    [document.getElementById('f-house').value,
+     document.getElementById('f-street').value,
+     document.getElementById('f-landmark').value,
+     document.getElementById('f-area').value,
+     document.getElementById('f-city').value,
+     document.getElementById('f-pin').value].filter(Boolean).join(', ');
+  const complaint={
+    id:complaintId,
+    date:new Date().toLocaleDateString('en-IN'),
+    name:document.getElementById('f-name').value,
+    mobile:document.getElementById('f-mobile').value,
+    email:document.getElementById('f-email').value,
+    ward:document.getElementById('f-ward').value,
+    address:addr,
+    gps:gpsLat?`${gpsLat}, ${gpsLng}`:'',
+    category:document.getElementById('f-category').value,
+    since:document.getElementById('f-since').value,
+    severity:document.getElementById('f-severity').value,
+    description:document.getElementById('f-desc').value,
+    letter:generatedLetter,
+    photoDataUrl:photoDataUrl||null,
+    status:'Submitted',
+    timestamp:Date.now()
+  };
+  // Save locally
+  complaints.unshift(complaint);
+  localStorage.setItem('adilabad_complaints',JSON.stringify(complaints));
+  // Send email via mailto (best effort in pure HTML)
+  sendMailto(complaint);
+  // Show success
+  document.getElementById('form-nav-btns').style.display='none';
+  document.querySelectorAll('.form-panel').forEach(p=>p.classList.remove('active'));
+  const sp=document.getElementById('success-page');
+  sp.classList.add('show');
+  document.getElementById('complaint-id-display').textContent=complaintId;
+  renderComplaints();
+  showToast('✅ Complaint submitted successfully!');
+}
+
+function sendMailto(c){
+  const subject=encodeURIComponent(`[${c.id}] Public Complaint Submission`);
+  const body=encodeURIComponent(
+`COMPLAINT ID: ${c.id}
+Date: ${c.date}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CITIZEN DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Name: ${c.name}
+Mobile: ${c.mobile}
+Email: ${c.email}
+Ward: ${c.ward||'N/A'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMPLAINT DETAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Category: ${c.category}
+Severity: ${c.severity}
+Issue Since: ${c.since}
+GPS Coordinates: ${c.gps||'Not provided'}
+Address: ${c.address}
+
+Description:
+${c.description}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AI GENERATED COMPLAINT LETTER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${c.letter||'Not generated'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Note: Photo and voice attachments were submitted via the portal.
+Please check the admin dashboard for full media attachments.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Adilabad Public Complaint Portal | 504001`);
+  window.open(`mailto:mcaadilabad5885@gmail.com?subject=${subject}&body=${body}`,'_blank');
+}
+
+function copyComplaintId(){
+  const id=document.getElementById('complaint-id-display').textContent;
+  navigator.clipboard.writeText(id).then(()=>showToast('✅ Complaint ID copied!')).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=id;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    showToast('✅ Complaint ID copied!');
+  });
+}
+
+function resetForm(){
+  photoFile=null;photoDataUrl=null;voiceBlob=null;gpsLat=null;gpsLng=null;generatedLetter='';
+  document.getElementById('complaint-form')&&document.getElementById('complaint-form').reset();
+  ['f-name','f-mobile','f-email','f-ward','f-category','f-desc','f-since','f-house','f-street','f-landmark','f-area'].forEach(id=>{
+    const el=document.getElementById(id);if(el) el.value='';
+  });
+  document.getElementById('f-city').value='Adilabad';
+  document.getElementById('f-pin').value='504001';
+  document.getElementById('gps-coords').value='';
+  document.getElementById('auto-address').value='';
+  document.getElementById('photo-preview').style.display='none';
+  document.getElementById('photo-drop').classList.remove('has-photo');
+  document.querySelector('.upload-icon').textContent='📷';
+  document.getElementById('upload-head').textContent='Tap to Add Photo';
+  document.getElementById('ai-output').classList.remove('visible');
+  document.getElementById('ai-output').textContent='';
+  document.getElementById('ai-action-btns').style.display='none';
+  document.getElementById('voice-playback').style.display='none';
+  document.getElementById('loc-status').className='loc-status';
+  document.getElementById('success-page').classList.remove('show');
+  document.getElementById('form-nav-btns').style.display='flex';
+  showPanel(1);
+}
+
+/* ===== TRACK ===== */
+function trackComplaint(){
+  const id=document.getElementById('track-input').value.trim().toUpperCase();
+  const res=document.getElementById('track-result');
+  if(!id){showToast('Please enter a Complaint ID.');return;}
+  const found=complaints.find(c=>c.id===id);
+  if(!found){
+    res.style.display='block';
+    res.innerHTML=`<div style="padding:16px;background:var(--red-light);border-radius:var(--radius);color:var(--red);border:1px solid #FFCDD2"><strong>❌ Not found.</strong> Please check the ID and try again. Complaint ID format: APC-2026-XXXXXX</div>`;
+    return;
+  }
+  const statusColors={Submitted:'status-submitted','Under Review':'status-under-review','In Progress':'status-in-progress',Resolved:'status-resolved'};
+  res.style.display='block';
+  res.innerHTML=`<div style="background:var(--white);border-radius:var(--radius-lg);padding:20px;border:1.5px solid var(--gray-200);box-shadow:var(--shadow-sm)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div>
+        <div style="font-size:.72rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Complaint ID</div>
+        <div style="font-size:1.2rem;font-weight:800;font-family:monospace;color:var(--orange-dark)">${found.id}</div>
+      </div>
+      <span class="status-badge ${statusColors[found.status]||'status-submitted'}">${found.status}</span>
+    </div>
+    <div style="display:grid;gap:8px;font-size:.85rem">
+      <div><strong>Name:</strong> ${esc(found.name)}</div>
+      <div><strong>Category:</strong> ${esc(found.category)}</div>
+      <div><strong>Date:</strong> ${found.date}</div>
+      <div><strong>Address:</strong> ${esc(found.address)}</div>
+      <div><strong>Description:</strong> ${esc(found.description)}</div>
+    </div>
+  </div>`;
+}
+
+/* ===== ADMIN ===== */
+function renderComplaints(){
+  const tbody=document.getElementById('complaints-tbody');
+  const search=document.getElementById('admin-search').value.toLowerCase();
+  const cat=document.getElementById('admin-filter-cat').value;
+  const status=document.getElementById('admin-filter-status').value;
+  let filtered=complaints.filter(c=>{
+    const matchSearch=!search||(c.id+c.name+c.category+c.address).toLowerCase().includes(search);
+    const matchCat=!cat||c.category===cat;
+    const matchStatus=!status||c.status===status;
+    return matchSearch&&matchCat&&matchStatus;
+  });
+  if(!filtered.length){
+    tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><span class="empty-icon">📋</span><br/><span>${LANG[currentLang].no_complaints_txt||'No complaints found.'}</span></td></tr>`;
+    return;
+  }
+  const colors={Submitted:'status-submitted','Under Review':'status-under-review','In Progress':'status-in-progress',Resolved:'status-resolved'};
+  tbody.innerHTML=filtered.map(c=>`
+    <tr>
+      <td style="font-family:monospace;font-weight:700;color:var(--orange-dark)">${c.id}</td>
+      <td>${c.date}</td>
+      <td>${esc(c.name)}</td>
+      <td>${esc(c.category)}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.address)}">${esc(c.address||'–')}</td>
+      <td><span class="status-badge ${colors[c.status]||'status-submitted'}">${c.status}</span></td>
+      <td>
+        <select style="padding:4px 8px;border-radius:6px;border:1px solid var(--gray-200);font-size:.72rem;cursor:pointer" onchange="updateStatus('${c.id}',this.value)">
+          <option value="Submitted" ${c.status==='Submitted'?'selected':''}>Submitted</option>
+          <option value="Under Review" ${c.status==='Under Review'?'selected':''}>Under Review</option>
+          <option value="In Progress" ${c.status==='In Progress'?'selected':''}>In Progress</option>
+          <option value="Resolved" ${c.status==='Resolved'?'selected':''}>Resolved</option>
+        </select>
+      </td>
+    </tr>`).join('');
+}
+function filterComplaints(){renderComplaints();}
+function updateStatus(id,status){
+  const c=complaints.find(x=>x.id===id);
+  if(c){c.status=status;localStorage.setItem('adilabad_complaints',JSON.stringify(complaints));renderComplaints();if(adminUnlocked)updateAnalytics();showToast('✅ Status updated!');}
+}
+function downloadReport(){
+  if(!complaints.length){showToast('No complaints to download.');return;}
+  const header=['ID','Date','Name','Mobile','Email','Category','Severity','Address','GPS','Since','Status','Description'];
+  const rows=complaints.map(c=>[c.id,c.date,c.name,c.mobile,c.email,c.category,c.severity,c.address,c.gps,c.since,c.status,c.description].map(v=>'"'+(v||'').replace(/"/g,'""')+'"'));
+  const csv=[header,...rows].map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`Adilabad_Complaints_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('📥 Report downloaded!');
+}
+
+/* ===== SEND EMAIL FROM AI LETTER ===== */
 function sendEmailFromLetter(){
-    if(!generatedLetter){showToast('⚠️ Please generate the complaint letter first.');return;}
-    const category=document.getElementById('f-category').value||'Civic Issue';
-    const subject=encodeURIComponent(`Complaint: ${category} - Adilabad 504001`);
-    const body=encodeURIComponent(generatedLetter);
-    
-    // window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
-    showToast('⚠️ This feature is a work in progress!');
+  if(!generatedLetter){showToast('⚠️ Please generate the complaint letter first.');return;}
+  const category=document.getElementById('f-category').value||'Civic Issue';
+  const subject=encodeURIComponent(`Complaint: ${category} – Adilabad 504001`);
+  const body=encodeURIComponent(generatedLetter);
+  window.open(`mailto:mcaadilabad5885@gmail.com?subject=${subject}&body=${body}`,'_blank');
+  showToast('📧 Opening email client…');
+}
+
+function copyComplaintLetter(){
+  if(!generatedLetter){showToast('⚠️ No complaint letter to copy.');return;}
+  navigator.clipboard.writeText(generatedLetter).then(()=>showToast('✅ Complaint copied to clipboard!')).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=generatedLetter;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    showToast('✅ Complaint copied!');
+  });
 }
 
 /* ===== ADMIN PASSWORD LOCK ===== */
@@ -1945,71 +3787,6 @@ setProgress(1);
      data-shape="rectangular">
 </div>
 
-<script>
-function handleCredentialResponse(response) {
-    const data = parseJwt(response.credential);
-
-    localStorage.setItem("userName", data.name);
-    localStorage.setItem("userEmail", data.email);
-    localStorage.setItem("userPicture", data.picture);
-
-    alert("Welcome " + data.name);
-
-    document.getElementById("userInfo").innerHTML =
-        `<img src="${data.picture}" width="40" style="border-radius:50%">
-         <p>${data.name}</p>
-         <p>${data.email}</p>`;
-}
-
-function parseJwt(token) {
-    var base64Url = token.split('.')[1];
-    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-
-    return JSON.parse(jsonPayload);
-}function displayComplaintsInDashboard() {
-    // 1. Targets your exact table body element found on line 985 of your code
-    const tableBody = document.getElementById('complaints-tbody');
-    if (!tableBody) return;
-
-    // 2. Fetch the stored complaints list from local storage
-    let complaintsList = JSON.parse(localStorage.getItem('savedComplaints')) || [];
-    tableBody.innerHTML = ''; // Clear previous fallback states
-
-    if (complaintsList.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="7" class="empty-state" style="text-align:center; padding: 20px; color: var(--gray-600); font-style: italic;">
-                    No complaints submitted yet. Be the first!
-                </td>
-            </tr>`;
-        return;
-    }
-
-    // 3. Loop through your live entries and build table rows matching your columns
-    complaintsList.forEach((complaint) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td style="font-family: monospace; font-weight: 700; color: var(--orange-dark);">${complaint.id}</td>
-            <td>${complaint.date || new Date().toLocaleDateString()}</td>
-            <td>${complaint.name}</td>
-            <td>${complaint.category}</td>
-            <td style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${complaint.house}, ${complaint.street}, ${complaint.area}">${complaint.house}, ${complaint.street}, ${complaint.area}</td>
-            <td><span class="status-badge status-submitted" style="background: var(--orange-pale); color: var(--orange); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">Submitted</span></td>
-            <td>---</td>
-        `;
-        tableBody.appendChild(row);
-    });
-}
-
-// Automatically mount and read historical data when dashboard is accessed
-document.addEventListener('DOMContentLoaded', () => {
-    displayComplaintsInDashboard();
-});
 </script>
-
-<div id="userInfo"></div>
 </body>
 </html>
