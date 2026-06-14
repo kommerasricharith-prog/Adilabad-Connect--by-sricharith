@@ -1610,48 +1610,43 @@ function buildReview(){
 }
 function esc(s){return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-/* ===== SUBMIT ===== */
-async function submitComplaint(){
-  if(!validatePanel(3)) { showPanel(3); return; }
-  const complaintId=generateComplaintId();
-  const addr=document.getElementById('auto-address').value||
-    [document.getElementById('f-house').value,
-     document.getElementById('f-street').value,
-     document.getElementById('f-landmark').value,
-     document.getElementById('f-area').value,
-     document.getElementById('f-city').value,
-     document.getElementById('f-pin').value].filter(Boolean).join(', ');
-  const complaint={
-    id:complaintId,
-    date:new Date().toLocaleDateString('en-IN'),
-    name:document.getElementById('f-name').value,
-    mobile:document.getElementById('f-mobile').value,
-    email:document.getElementById('f-email').value,
-    ward:document.getElementById('f-ward').value,
-    address:addr,
-    gps:gpsLat?`${gpsLat}, ${gpsLng}`:'',
-    category:document.getElementById('f-category').value,
-    since:document.getElementById('f-since').value,
-    severity:document.getElementById('f-severity').value,
-    description:document.getElementById('f-desc').value,
-    letter:generatedLetter,
-    photoDataUrl:photoDataUrl||null,
-    status:'Submitted',
-    timestamp:Date.now()
-  };
-  // Save locally
-  complaints.unshift(complaint);
-  localStorage.setItem('adilabad_complaints',JSON.stringify(complaints));
-  // Send email via mailto (best effort in pure HTML)
-  sendMailto(complaint);
-  // Show success
-  document.getElementById('form-nav-btns').style.display='none';
-  document.querySelectorAll('.form-panel').forEach(p=>p.classList.remove('active'));
-  const sp=document.getElementById('success-page');
-  sp.classList.add('show');
-  document.getElementById('complaint-id-display').textContent=complaintId;
-  renderComplaints();
-  showToast('✅ Complaint submitted successfully!');
+function submitComplaint(){
+    if(!generatedLetter){
+        showToast('⚠️ Please generate the complaint letter first.');
+        return;
+    }
+
+    // 1. Gather the complaint data from your inputs
+    const complaintData = {
+        id: document.getElementById('complaint-id-display').textContent,
+        name: document.getElementById('f-name').value,
+        mobile: document.getElementById('f-mobile').value,
+        email: document.getElementById('f-email').value,
+        ward: document.getElementById('f-ward').value,
+        category: document.getElementById('f-category').value,
+        since: document.getElementById('f-since').value,
+        house: document.getElementById('f-house').value,
+        street: document.getElementById('f-street').value,
+        landmark: document.getElementById('f-landmark').value,
+        area: document.getElementById('f-area').value,
+        letter: generatedLetter || 'Not generated',
+        date: new Date().toLocaleDateString()
+    };
+
+    // 2. Fetch existing complaints from localStorage, add the new one, and save back
+    let complaintsList = JSON.parse(localStorage.getItem('savedComplaints')) || [];
+    complaintsList.push(complaintData);
+    localStorage.setItem('savedComplaints', JSON.stringify(complaintsList));
+
+    // 3. Refresh the dashboard list immediately
+    displayComplaintsInDashboard();
+
+    // 4. Show success screen
+    document.getElementById('form-screen').classList.add('hidden');
+    document.getElementById('success-screen').classList.remove('hidden');
+
+    // 5. Work in progress notification
+    showToast('⚠️ This feature is a work in progress!');
 }
 
 function sendMailto(c){
@@ -1726,6 +1721,53 @@ function resetForm(){
   document.getElementById('form-nav-btns').style.display='flex';
   showPanel(1);
 }
+  // ... structures inside your existing resetForm() function ...
+    const el = document.getElementById(id); if(el) el.value='';
+    });
+} // <--- THIS IS THE END OF YOUR RESETFORM FUNCTION
+
+// ====================================================
+// PASTE THE NEW CODE RIGHT HERE:
+// ====================================================
+function displayComplaintsInDashboard() {
+    const container = document.getElementById('admin-complaints-list') || document.getElementById('complaints-container');
+    if (!container) return;
+
+    let complaintsList = JSON.parse(localStorage.getItem('savedComplaints')) || [];
+    container.innerHTML = ''; 
+
+    if (complaintsList.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center p-4">No complaints registered yet.</p>';
+        return;
+    }
+
+    complaintsList.forEach((complaint) => {
+        const card = document.createElement('div');
+        card.className = "p-4 mb-4 border rounded bg-white shadow-sm text-gray-800"; 
+        card.innerHTML = `
+            <div class="flex justify-between items-center mb-2 border-b pb-1">
+                <span class="font-bold text-blue-600">ID: ${complaint.id}</span>
+                <span class="text-sm text-gray-500">${complaint.date}</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm mb-2">
+                <p><strong>Citizen:</strong> ${complaint.name} (${complaint.mobile})</p>
+                <p><strong>Category:</strong> ${complaint.category} (Ward: ${complaint.ward})</p>
+                <p class="md:col-span-2"><strong>Address:</strong> ${complaint.house}, ${complaint.street}, ${complaint.landmark}, ${complaint.area}</p>
+            </div>
+            <div class="mt-2 p-2 bg-gray-50 rounded text-xs max-h-32 overflow-y-auto whitespace-pre-wrap border">
+                <strong>Letter Record:</strong>\n${complaint.letter}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    displayComplaintsInDashboard();
+});
+// ====================================================
+
+// (Your existing password functions or closing </script> tag will be right below here)
 
 /* ===== TRACK ===== */
 function trackComplaint(){
@@ -1927,7 +1969,45 @@ function parseJwt(token) {
     }).join(''));
 
     return JSON.parse(jsonPayload);
+}function displayComplaintsInDashboard() {
+    // 1. Targets your exact table body element found on line 985 of your code
+    const tableBody = document.getElementById('complaints-tbody');
+    if (!tableBody) return;
+
+    // 2. Fetch the stored complaints list from local storage
+    let complaintsList = JSON.parse(localStorage.getItem('savedComplaints')) || [];
+    tableBody.innerHTML = ''; // Clear previous fallback states
+
+    if (complaintsList.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-state" style="text-align:center; padding: 20px; color: var(--gray-600); font-style: italic;">
+                    No complaints submitted yet. Be the first!
+                </td>
+            </tr>`;
+        return;
+    }
+
+    // 3. Loop through your live entries and build table rows matching your columns
+    complaintsList.forEach((complaint) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="font-family: monospace; font-weight: 700; color: var(--orange-dark);">${complaint.id}</td>
+            <td>${complaint.date || new Date().toLocaleDateString()}</td>
+            <td>${complaint.name}</td>
+            <td>${complaint.category}</td>
+            <td style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${complaint.house}, ${complaint.street}, ${complaint.area}">${complaint.house}, ${complaint.street}, ${complaint.area}</td>
+            <td><span class="status-badge status-submitted" style="background: var(--orange-pale); color: var(--orange); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">Submitted</span></td>
+            <td>---</td>
+        `;
+        tableBody.appendChild(row);
+    });
 }
+
+// Automatically mount and read historical data when dashboard is accessed
+document.addEventListener('DOMContentLoaded', () => {
+    displayComplaintsInDashboard();
+});
 </script>
 
 <div id="userInfo"></div>
